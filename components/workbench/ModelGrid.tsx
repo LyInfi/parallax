@@ -14,7 +14,7 @@ bootstrapProviders()
 
 export function ModelGrid() {
   const { cards, addCard, removeCard } = useModelStore()
-  const { prompt, attachments, params } = usePromptStore()
+  usePromptStore() // subscribed for re-renders; live values read via getState() in runAll
   const providers = listProviders()
   const byId = new Map(providers.map(p => [p.id, p]))
   const controllers = useRef<Map<string, CardControllerHandle>>(new Map())
@@ -23,9 +23,12 @@ export function ModelGrid() {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const runAll = () => {
-    for (const c of cards) {
+    const latest = useModelStore.getState().cards
+    const ps = usePromptStore.getState()
+    for (const c of latest) {
       controllers.current.get(c.cardId)?.run({
-        prompt, attachments, size: params.size, n: params.n, seed: params.seed,
+        prompt: ps.prompt, attachments: ps.attachments,
+        size: ps.params.size, n: ps.params.n, seed: ps.params.seed,
         parentAssetId: pendingRef?.parentAssetId,
       })
     }
@@ -50,7 +53,7 @@ export function ModelGrid() {
     usePromptStore.getState().setAttachments([f])
     useModelStore.setState({ cards: ids.map(id => ({ cardId: crypto.randomUUID(), providerId: id })) })
     setPendingRef({ blob: pendingRef.blob, parentAssetId: parentId })
-    setTimeout(runAll, 0)
+    requestAnimationFrame(() => requestAnimationFrame(runAll))
   }
 
   return (
