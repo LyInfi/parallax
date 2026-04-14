@@ -1,12 +1,14 @@
 'use client'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useModelStore } from '@/lib/store/useModelStore'
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { CardController, type CardControllerHandle } from './CardController'
 import { AddModelCard } from './AddModelCard'
 import { PromptBar } from './PromptBar'
+import { MultiModelPicker } from './MultiModelPicker'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
+import { putAsset } from '@/lib/storage/gallery'
 
 bootstrapProviders()
 
@@ -17,10 +19,14 @@ export function ModelGrid() {
   const byId = new Map(providers.map(p => [p.id, p]))
   const controllers = useRef<Map<string, CardControllerHandle>>(new Map())
 
+  const [pendingRef, setPendingRef] = useState<{ blob: Blob; parentAssetId?: string } | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
   const runAll = () => {
     for (const c of cards) {
       controllers.current.get(c.cardId)?.run({
         prompt, attachments, size: params.size, n: params.n, seed: params.seed,
+        parentAssetId: pendingRef?.parentAssetId,
       })
     }
   }
@@ -28,8 +34,23 @@ export function ModelGrid() {
 
   const deriveFrom = async (url: string) => {
     const blob = await (await fetch(url)).blob()
-    const f = new File([blob], 'ref.png', { type: blob.type })
+    setPendingRef({ blob })
+    setPickerOpen(true)
+  }
+
+  const confirmDerive = async (ids: string[]) => {
+    if (!pendingRef) return
+    const parentId = crypto.randomUUID()
+    await putAsset({
+      id: parentId, sessionId: 'derive-source', providerId: 'derive',
+      blob: pendingRef.blob, thumbBlob: pendingRef.blob,
+      meta: { prompt: usePromptStore.getState().prompt, params: {}, createdAt: Date.now(), favorited: false },
+    })
+    const f = new File([pendingRef.blob], 'ref.png', { type: pendingRef.blob.type })
     usePromptStore.getState().setAttachments([f])
+    useModelStore.setState({ cards: ids.map(id => ({ cardId: crypto.randomUUID(), providerId: id })) })
+    setPendingRef({ blob: pendingRef.blob, parentAssetId: parentId })
+    setTimeout(runAll, 0)
   }
 
   return (
@@ -52,6 +73,12 @@ export function ModelGrid() {
         <AddModelCard providers={providers} onAdd={addCard} />
       </div>
       <PromptBar onGenerate={runAll} onCancel={cancelAll} />
+      <MultiModelPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        providers={providers}
+        onConfirm={confirmDerive}
+      />
     </div>
   )
 }
