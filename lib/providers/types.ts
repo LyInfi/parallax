@@ -5,8 +5,13 @@ export const CapabilitiesSchema = z.object({
   imageToImage: z.boolean(),
   maxImages: z.number().int().positive(),
   sizes: z.array(z.string()).min(1),
+  keyFields: z.array(z.string()).optional(), // default ['apiKey']
 })
 export type Capabilities = z.infer<typeof CapabilitiesSchema>
+
+export function getKeyFields(p: { capabilities: Capabilities }): string[] {
+  return p.capabilities.keyFields ?? ['apiKey']
+}
 
 export const GenerateInputSchema = z.object({
   prompt: z.string().min(1),
