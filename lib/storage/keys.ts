@@ -10,3 +10,18 @@ export function listKeyedProviders(): string[] {
   }
   return out
 }
+
+export function setCreds(providerId: string, fields: Record<string, string>): void {
+  localStorage.setItem(PREFIX + providerId, JSON.stringify(fields))
+}
+
+export function getCreds(providerId: string): Record<string, string> | null {
+  const raw = localStorage.getItem(PREFIX + providerId)
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, string>
+  } catch {}
+  // legacy: treat raw string as { apiKey: raw }
+  return { apiKey: raw }
+}

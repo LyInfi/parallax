@@ -14,9 +14,10 @@ describe('KeyManager', () => {
   beforeEach(() => localStorage.clear())
   it('persists key on save', async () => {
     render(<KeyManager />)
-    const input = screen.getByLabelText(/mock/i)
+    const input = screen.getByLabelText(/api key/i)
     await userEvent.type(input, 'secret')
     await userEvent.click(screen.getByRole('button', { name: /save mock/i }))
-    expect(localStorage.getItem('apikey:mock')).toBe('secret')
+    // multi-field storage stores as JSON { apiKey: 'secret' }
+    expect(localStorage.getItem('apikey:mock')).toBe(JSON.stringify({ apiKey: 'secret' }))
   })
 })

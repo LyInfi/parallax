@@ -2,7 +2,7 @@
 import { useImperativeHandle, forwardRef, useState } from 'react'
 import { ModelCard } from './ModelCard'
 import { useGenerate } from '@/lib/hooks/useGenerate'
-import { getKey } from '@/lib/storage/keys'
+import { getCreds } from '@/lib/storage/keys'
 import { putAsset } from '@/lib/storage/gallery'
 import { toast } from 'sonner'
 
@@ -27,10 +27,17 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
 
   useImperativeHandle(ref, () => ({
     run: ({ prompt, attachments, size, n, seed, parentAssetId }) => {
-      const apiKey = getKey(providerId)
-      if (!apiKey) { toast.error(`Missing API key for ${providerName}. Open Settings.`); return }
+      const creds = getCreds(providerId)
+      if (!creds || Object.keys(creds).length === 0) {
+        toast.error(`Missing API key for ${providerName}. Open Settings.`)
+        return
+      }
+      // For single-field (just apiKey), send raw string for back-compat with existing adapters
+      const keyPayload = Object.keys(creds).length === 1 && 'apiKey' in creds
+        ? creds.apiKey
+        : JSON.stringify(creds)
       setLastCtx({ prompt, params: { size, n, seed }, parentAssetId })
-      gen.start({ providerId, apiKey, input: { prompt, referenceImages: attachments, size, n, seed } })
+      gen.start({ providerId, apiKey: keyPayload, input: { prompt, referenceImages: attachments, size, n, seed } })
     },
     cancel: () => gen.cancel(),
   }), [gen, providerId, providerName])
@@ -62,10 +69,17 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     <ModelCard
       card={{ cardId, providerId, status: gen.status, images: gen.images.map(u => ({ url: u })), error: gen.error ?? undefined }}
       providerName={providerName}
-      onRetry={() => lastCtx && gen.start({
-        providerId, apiKey: getKey(providerId) ?? '',
-        input: { prompt: lastCtx.prompt, size: lastCtx.params.size as string | undefined, n: lastCtx.params.n as number | undefined, seed: lastCtx.params.seed as number | undefined },
-      })}
+      onRetry={() => {
+        if (!lastCtx) return
+        const retryCreds = getCreds(providerId)
+        const retryKey = retryCreds && Object.keys(retryCreds).length === 1 && 'apiKey' in retryCreds
+          ? retryCreds.apiKey
+          : JSON.stringify(retryCreds ?? {})
+        gen.start({
+          providerId, apiKey: retryKey,
+          input: { prompt: lastCtx.prompt, size: lastCtx.params.size as string | undefined, n: lastCtx.params.n as number | undefined, seed: lastCtx.params.seed as number | undefined },
+        })
+      }}
       onFavorite={saveFavorite}
       onDownload={download}
       onDeriveFrom={onDeriveFrom}
