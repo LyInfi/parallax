@@ -29,7 +29,7 @@ export const jimengSeedreamProvider: ProviderAdapter = {
   displayName: '即梦 Seedream',
   capabilities: {
     textToImage: true,
-    imageToImage: false,
+    imageToImage: true,
     maxImages: 4,
     // Shares 火山方舟 Seedream infra: same ≥ 3,686,400 pixel minimum
     sizes: ['2048x2048', '2304x1728', '1728x2304', '2560x1440', '1440x2560'],
@@ -63,6 +63,14 @@ export const jimengSeedreamProvider: ProviderAdapter = {
 
     if (input.seed !== undefined) {
       body.seed = input.seed
+    }
+
+    if (input.referenceImages && input.referenceImages.length > 0) {
+      const imgs = input.referenceImages
+        .map((r) => (typeof r === 'string' ? r : ''))
+        .filter((s): s is string => Boolean(s))
+      if (imgs.length === 1) body.image = imgs[0]
+      else if (imgs.length > 1) body.image = imgs
     }
 
     // referenceImages: 即梦 OpenAI-compat images/generations does not support image-to-image

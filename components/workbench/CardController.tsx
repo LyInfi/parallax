@@ -4,6 +4,7 @@ import { ModelCard } from './ModelCard'
 import { useGenerate } from '@/lib/hooks/useGenerate'
 import { getCreds, getConfig } from '@/lib/storage/keys'
 import { putAsset, setFavorite } from '@/lib/storage/gallery'
+import { fetchImageBlob } from '@/lib/image-fetch'
 import { toast } from 'sonner'
 
 export type CardControllerHandle = {
@@ -78,7 +79,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
       seenUrls.current.add(url)
       void (async () => {
         try {
-          const blob = await (await fetch(url)).blob()
+          const blob = await fetchImageBlob(url)
           const id = crypto.randomUUID()
           await putAsset({
             id,
@@ -95,8 +96,8 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
             },
           })
           urlToAsset.current.set(url, id)
-        } catch {
-          // silently ignore network/storage errors
+        } catch (e) {
+          console.error('[auto-save] failed for', providerId, url, e)
         }
       })()
     }
@@ -110,7 +111,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     } else {
       // Fallback: auto-save hasn't finished yet (race), save fresh as favorited
       try {
-        const blob = await (await fetch(url)).blob()
+        const blob = await fetchImageBlob(url)
         const newId = crypto.randomUUID()
         await putAsset({
           id: newId,

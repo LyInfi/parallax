@@ -26,7 +26,7 @@ export const doubaoSeedreamProvider: ProviderAdapter = {
   displayName: '豆包 Seedream',
   capabilities: {
     textToImage: true,
-    imageToImage: false,
+    imageToImage: true,
     maxImages: 4,
     // Seedream 4.0 requires at least 3,686,400 pixels per image
     sizes: ['2048x2048', '2304x1728', '1728x2304', '2560x1440', '1440x2560'],
@@ -62,9 +62,15 @@ export const doubaoSeedreamProvider: ProviderAdapter = {
       body.seed = input.seed
     }
 
-    // referenceImages: 即梦/豆包 Seedream OpenAI-compat endpoint may not support image-to-image
-    // in the images/generations path — skip with a note.
-    // If image-to-image is needed, use the vision endpoint instead.
+    // Image-to-image: Seedream 4.0 supports an `image` field (string or array of strings).
+    // Accept both data-URL and remote-URL forms already produced by the client.
+    if (input.referenceImages && input.referenceImages.length > 0) {
+      const imgs = input.referenceImages
+        .map((r) => (typeof r === 'string' ? r : ''))
+        .filter((s): s is string => Boolean(s))
+      if (imgs.length === 1) body.image = imgs[0]
+      else if (imgs.length > 1) body.image = imgs
+    }
 
     try {
       const res = await fetch(ENDPOINT, {

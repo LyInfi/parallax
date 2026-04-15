@@ -8,6 +8,7 @@ import { MultiModelPicker } from './MultiModelPicker'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
 import { putAsset, putSession } from '@/lib/storage/gallery'
+import { fetchImageBlob } from '@/lib/image-fetch'
 
 bootstrapProviders()
 
@@ -46,7 +47,7 @@ export function ModelGrid() {
   const cancelAll = () => { controllers.current.forEach(c => c.cancel()) }
 
   const deriveFrom = async (url: string) => {
-    const blob = await (await fetch(url)).blob()
+    const blob = await fetchImageBlob(url)
     setPendingRef({ blob })
     setPickerOpen(true)
   }
