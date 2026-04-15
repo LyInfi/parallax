@@ -7,7 +7,7 @@ import { PromptBar } from './PromptBar'
 import { MultiModelPicker } from './MultiModelPicker'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
-import { putAsset } from '@/lib/storage/gallery'
+import { putAsset, putSession } from '@/lib/storage/gallery'
 
 bootstrapProviders()
 
@@ -21,11 +21,22 @@ export function ModelGrid() {
   const [pendingRef, setPendingRef] = useState<{ blob: Blob; parentAssetId?: string } | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  const runAll = () => {
+  const runAll = async () => {
     const latest = useModelStore.getState().cards
     const ps = usePromptStore.getState()
+    if (latest.length === 0) return
+    const sessionId = crypto.randomUUID()
+    await putSession({
+      id: sessionId,
+      prompt: ps.prompt,
+      params: { size: ps.params.size, n: ps.params.n, seed: ps.params.seed },
+      providerIds: latest.map(c => c.providerId),
+      createdAt: Date.now(),
+      parentAssetId: pendingRef?.parentAssetId,
+    })
     for (const c of latest) {
       controllers.current.get(c.cardId)?.run({
+        sessionId,
         prompt: ps.prompt, attachments: ps.attachments,
         size: ps.params.size, n: ps.params.n, seed: ps.params.seed,
         parentAssetId: pendingRef?.parentAssetId,

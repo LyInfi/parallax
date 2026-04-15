@@ -1,13 +1,21 @@
 'use client'
-import { useImperativeHandle, forwardRef, useState } from 'react'
+import { useImperativeHandle, forwardRef, useState, useEffect, useRef } from 'react'
 import { ModelCard } from './ModelCard'
 import { useGenerate } from '@/lib/hooks/useGenerate'
 import { getCreds, getConfig } from '@/lib/storage/keys'
-import { putAsset } from '@/lib/storage/gallery'
+import { putAsset, setFavorite } from '@/lib/storage/gallery'
 import { toast } from 'sonner'
 
 export type CardControllerHandle = {
-  run: (args: { prompt: string; attachments: Blob[]; size?: string; n?: number; seed?: number; parentAssetId?: string }) => void
+  run: (args: {
+    sessionId: string
+    prompt: string
+    attachments: Blob[]
+    size?: string
+    n?: number
+    seed?: number
+    parentAssetId?: string
+  }) => void
   cancel: () => void
 }
 
@@ -23,10 +31,18 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
   { cardId, providerId, providerName, onRemove, onDeriveFrom }, ref,
 ) {
   const gen = useGenerate()
-  const [lastCtx, setLastCtx] = useState<{ prompt: string; params: Record<string, unknown>; parentAssetId?: string } | null>(null)
+  const [lastCtx, setLastCtx] = useState<{
+    sessionId: string
+    prompt: string
+    params: Record<string, unknown>
+    parentAssetId?: string
+  } | null>(null)
+
+  const seenUrls = useRef(new Set<string>())
+  const urlToAsset = useRef(new Map<string, string>())
 
   useImperativeHandle(ref, () => ({
-    run: ({ prompt, attachments, size, n, seed, parentAssetId }) => {
+    run: ({ sessionId, prompt, attachments, size, n, seed, parentAssetId }) => {
       const creds = getCreds(providerId)
       if (!creds || Object.keys(creds).length === 0) {
         toast.error(`Missing API key for ${providerName}. Open Settings.`)
@@ -40,7 +56,10 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
       const providerOverrides = Object.fromEntries(
         Object.entries(cfg).filter(([, v]) => v && v.trim() !== ''),
       )
-      setLastCtx({ prompt, params: { size, n, seed }, parentAssetId })
+      // Clear seen URLs so a new generation auto-saves fresh
+      seenUrls.current.clear()
+      urlToAsset.current.clear()
+      setLastCtx({ sessionId, prompt, params: { size, n, seed }, parentAssetId })
       gen.start({
         providerId, apiKey: keyPayload,
         input: {
@@ -52,21 +71,67 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     cancel: () => gen.cancel(),
   }), [gen, providerId, providerName])
 
+  // Auto-save every new image URL
+  useEffect(() => {
+    for (const url of gen.images) {
+      if (seenUrls.current.has(url)) continue
+      seenUrls.current.add(url)
+      void (async () => {
+        try {
+          const blob = await (await fetch(url)).blob()
+          const id = crypto.randomUUID()
+          await putAsset({
+            id,
+            sessionId: lastCtx?.sessionId ?? cardId,
+            providerId,
+            blob,
+            thumbBlob: blob,
+            meta: {
+              prompt: lastCtx?.prompt ?? '',
+              params: lastCtx?.params ?? {},
+              createdAt: Date.now(),
+              favorited: false,
+              parentAssetId: lastCtx?.parentAssetId,
+            },
+          })
+          urlToAsset.current.set(url, id)
+        } catch {
+          // silently ignore network/storage errors
+        }
+      })()
+    }
+  }, [gen.images, cardId, providerId, lastCtx])
+
   const saveFavorite = async (url: string) => {
-    const blob = await (await fetch(url)).blob()
-    const id = crypto.randomUUID()
-    await putAsset({
-      id, sessionId: cardId, providerId,
-      blob, thumbBlob: blob,
-      meta: {
-        prompt: lastCtx?.prompt ?? '',
-        params: lastCtx?.params ?? {},
-        createdAt: Date.now(),
-        favorited: true,
-        parentAssetId: lastCtx?.parentAssetId,
-      },
-    })
-    toast.success('Saved to gallery')
+    const id = urlToAsset.current.get(url)
+    if (id) {
+      await setFavorite(id, true)
+      toast.success('已加入收藏')
+    } else {
+      // Fallback: auto-save hasn't finished yet (race), save fresh as favorited
+      try {
+        const blob = await (await fetch(url)).blob()
+        const newId = crypto.randomUUID()
+        await putAsset({
+          id: newId,
+          sessionId: lastCtx?.sessionId ?? cardId,
+          providerId,
+          blob,
+          thumbBlob: blob,
+          meta: {
+            prompt: lastCtx?.prompt ?? '',
+            params: lastCtx?.params ?? {},
+            createdAt: Date.now(),
+            favorited: true,
+            parentAssetId: lastCtx?.parentAssetId,
+          },
+        })
+        urlToAsset.current.set(url, newId)
+        toast.success('已加入收藏')
+      } catch {
+        toast.error('保存失败')
+      }
+    }
   }
 
   const download = (url: string) => {

@@ -15,12 +15,26 @@ export type Asset = {
   }
 }
 
+export type GallerySession = {
+  id: string
+  prompt: string
+  params: Record<string, unknown>
+  providerIds: string[]
+  createdAt: number
+  parentAssetId?: string
+}
+
 class GalleryDb extends Dexie {
   assets!: EntityTable<Asset, 'id'>
+  sessions!: EntityTable<GallerySession, 'id'>
   constructor() {
     super('gallery')
     this.version(1).stores({
       assets: 'id, sessionId, providerId, meta.createdAt, meta.parentAssetId, meta.favorited',
+    })
+    this.version(2).stores({
+      assets: 'id, sessionId, providerId, meta.createdAt, meta.parentAssetId, meta.favorited',
+      sessions: 'id, createdAt',
     })
   }
 }
@@ -32,6 +46,10 @@ export async function getAsset(id: string) { return galleryDb.assets.get(id) }
 export async function listAssets() {
   return galleryDb.assets.orderBy('meta.createdAt').reverse().toArray()
 }
+export async function listFavoriteAssets() {
+  const all = await galleryDb.assets.orderBy('meta.createdAt').reverse().toArray()
+  return all.filter(a => a.meta.favorited)
+}
 export async function setFavorite(id: string, favorited: boolean) {
   const a = await galleryDb.assets.get(id); if (!a) return
   a.meta.favorited = favorited
@@ -39,4 +57,13 @@ export async function setFavorite(id: string, favorited: boolean) {
 }
 export async function childrenOf(parentAssetId: string) {
   return galleryDb.assets.where('meta.parentAssetId').equals(parentAssetId).toArray()
+}
+
+// session helpers
+export async function putSession(s: GallerySession) { await galleryDb.sessions.put(s) }
+export async function listSessions() {
+  return galleryDb.sessions.orderBy('createdAt').reverse().toArray()
+}
+export async function assetsOfSession(sessionId: string) {
+  return galleryDb.assets.where('sessionId').equals(sessionId).toArray()
 }
