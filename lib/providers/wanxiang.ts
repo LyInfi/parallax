@@ -71,7 +71,7 @@ export const wanxiangProvider: ProviderAdapter = {
   defaultModel: DEFAULT_MODEL,
   capabilities: {
     textToImage: true,
-    imageToImage: false,
+    imageToImage: true,
     maxImages: 4,
     // Preset sizes; custom WxH strings also accepted by the API
     sizes: ['1K', '2K', '4K'],
@@ -95,8 +95,14 @@ export const wanxiangProvider: ProviderAdapter = {
     const size = input.size ?? '2K'
     const n = input.n ?? 1
 
-    // Build message content: text prompt only (image-to-image not yet supported)
+    // Build message content: text prompt + optional reference images (img2img)
+    // Wan 2.7 messages-format expects content parts like { text } and { image: "<url|data-url>" }
     const content: Array<Record<string, unknown>> = [{ text: input.prompt }]
+    if (input.referenceImages && input.referenceImages.length > 0) {
+      for (const ref of input.referenceImages) {
+        if (typeof ref === 'string' && ref) content.push({ image: ref })
+      }
+    }
 
     let taskId: string | undefined
 
