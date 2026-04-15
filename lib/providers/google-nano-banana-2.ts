@@ -49,6 +49,7 @@ function parseSize(size?: string): { aspectRatio?: string } {
 export const googleNanoBanana2Provider: ProviderAdapter = {
   id: 'google-nano-banana-2',
   displayName: 'Google Nano Banana 2',
+  defaultModel: DEFAULT_MODEL,
   capabilities: {
     textToImage: true,
     imageToImage: true,

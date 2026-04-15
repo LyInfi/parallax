@@ -24,6 +24,7 @@ const DEFAULT_MODEL = 'doubao-seedream-4-0-250828'
 export const doubaoSeedreamProvider: ProviderAdapter = {
   id: 'doubao-seedream',
   displayName: '豆包 Seedream',
+  defaultModel: DEFAULT_MODEL,
   capabilities: {
     textToImage: true,
     imageToImage: true,

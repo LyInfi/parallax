@@ -33,6 +33,7 @@ function buildMessages(input: GenerateInput) {
 export const openrouterProvider: ProviderAdapter = {
   id: 'openrouter',
   displayName: 'OpenRouter',
+  defaultModel: DEFAULT_MODEL,
   capabilities: {
     textToImage: true,
     imageToImage: true,

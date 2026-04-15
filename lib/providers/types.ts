@@ -52,6 +52,8 @@ export function isGenerateEvent(x: unknown): x is GenerateEvent {
 export interface ProviderAdapter {
   id: string
   displayName: string
+  /** Default model identifier used when the user does not override via config. Shown in UI. */
+  defaultModel?: string
   capabilities: Capabilities
   generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent>
 }

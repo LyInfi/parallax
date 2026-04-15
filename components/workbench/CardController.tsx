@@ -24,12 +24,14 @@ type Props = {
   cardId: string
   providerId: string
   providerName: string
+  /** Effective model id to display on the card and stamp onto saved assets */
+  modelName?: string
   onRemove: () => void
   onDeriveFrom: (url: string) => void
 }
 
 export const CardController = forwardRef<CardControllerHandle, Props>(function CardController(
-  { cardId, providerId, providerName, onRemove, onDeriveFrom }, ref,
+  { cardId, providerId, providerName, modelName, onRemove, onDeriveFrom }, ref,
 ) {
   const gen = useGenerate()
   const [lastCtx, setLastCtx] = useState<{
@@ -93,6 +95,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
               createdAt: Date.now(),
               favorited: false,
               parentAssetId: lastCtx?.parentAssetId,
+              ...(modelName && { model: modelName }),
             },
           })
           urlToAsset.current.set(url, id)
@@ -145,6 +148,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     <ModelCard
       card={{ cardId, providerId, status: gen.status, images: gen.images.map(u => ({ url: u })), error: gen.error ?? undefined }}
       providerName={providerName}
+      modelName={modelName}
       onRetry={() => {
         if (!lastCtx) return
         const retryCreds = getCreds(providerId)

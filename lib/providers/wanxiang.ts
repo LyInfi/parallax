@@ -68,6 +68,7 @@ function mapHttpError(status: number, body: string): GenerateEvent {
 export const wanxiangProvider: ProviderAdapter = {
   id: 'wanxiang',
   displayName: '通义万相 Wan 2.7',
+  defaultModel: DEFAULT_MODEL,
   capabilities: {
     textToImage: true,
     imageToImage: false,

@@ -9,6 +9,12 @@ import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
 import { putAsset, putSession } from '@/lib/storage/gallery'
 import { fetchImageBlob } from '@/lib/image-fetch'
+import { getConfig } from '@/lib/storage/keys'
+
+function effectiveModel(providerId: string, defaultModel?: string): string | undefined {
+  const override = getConfig(providerId).model?.trim()
+  return override || defaultModel
+}
 
 bootstrapProviders()
 
@@ -27,11 +33,17 @@ export function ModelGrid() {
     const ps = usePromptStore.getState()
     if (latest.length === 0) return
     const sessionId = crypto.randomUUID()
+    const models: Record<string, string> = {}
+    for (const c of latest) {
+      const m = effectiveModel(c.providerId, byId.get(c.providerId)?.defaultModel)
+      if (m) models[c.providerId] = m
+    }
     await putSession({
       id: sessionId,
       prompt: ps.prompt,
       params: { size: ps.params.size, n: ps.params.n, seed: ps.params.seed },
       providerIds: latest.map(c => c.providerId),
+      models,
       createdAt: Date.now(),
       parentAssetId: pendingRef?.parentAssetId,
     })
@@ -79,6 +91,7 @@ export function ModelGrid() {
               cardId={c.cardId}
               providerId={c.providerId}
               providerName={p?.displayName ?? c.providerId}
+              modelName={effectiveModel(c.providerId, p?.defaultModel)}
               onRemove={() => removeCard(c.cardId)}
               onDeriveFrom={deriveFrom}
             />

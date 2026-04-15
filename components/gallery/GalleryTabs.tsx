@@ -31,7 +31,10 @@ function Lightbox({
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{asset.meta.prompt || '(无提示词)'}</div>
             <div className="text-xs text-muted-foreground">
-              {asset.providerId} · {new Date(asset.meta.createdAt).toLocaleString()}
+              {asset.providerId}
+              {asset.meta.model && <> · <span className="font-mono">{asset.meta.model}</span></>}
+              {' · '}
+              {new Date(asset.meta.createdAt).toLocaleString()}
             </div>
           </div>
           <Button size="sm" variant="outline" onClick={onToggleFav}>
@@ -56,7 +59,10 @@ function AssetCard({ a, urls, onOpen, onToggleFav }: { a: Asset; urls: Record<st
         <img src={urls[a.id]} alt={a.meta.prompt} className="w-full rounded hover:opacity-90 transition" />
       </button>
       <div className="text-xs truncate">{a.meta.prompt}</div>
-      <div className="text-xs text-muted-foreground">{a.providerId}</div>
+      <div className="text-xs text-muted-foreground truncate" title={a.meta.model ?? a.providerId}>
+        {a.providerId}
+        {a.meta.model && <> · <span className="font-mono">{a.meta.model}</span></>}
+      </div>
       <Button size="sm" variant="outline" onClick={onToggleFav}>
         {a.meta.favorited ? '取消收藏' : '收藏'}
       </Button>
@@ -168,8 +174,19 @@ function SessionsView() {
                 <div className="text-sm font-medium break-words line-clamp-2" title={s.prompt}>
                   {s.prompt || '(无提示词)'}
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(s.createdAt).toLocaleString()} · {s.providerIds.join(', ')}
+                <div className="text-xs text-muted-foreground mt-0.5 break-words">
+                  {new Date(s.createdAt).toLocaleString()}
+                  {' · '}
+                  {s.providerIds.map((pid, i) => {
+                    const m = s.models?.[pid]
+                    return (
+                      <span key={pid}>
+                        {i > 0 && ', '}
+                        {pid}
+                        {m && <span className="font-mono"> ({m})</span>}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
               <Button size="sm" variant="outline" className="shrink-0" onClick={() => reloadPrompt(s)}>

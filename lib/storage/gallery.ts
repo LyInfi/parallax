@@ -12,6 +12,7 @@ export type Asset = {
     createdAt: number
     favorited: boolean
     parentAssetId?: string
+    model?: string
   }
 }
 
@@ -20,6 +21,8 @@ export type GallerySession = {
   prompt: string
   params: Record<string, unknown>
   providerIds: string[]
+  /** Map providerId → effective model id used (optional; may be empty for legacy rows) */
+  models?: Record<string, string>
   createdAt: number
   parentAssetId?: string
 }

@@ -27,6 +27,7 @@ const DEFAULT_MODEL = 'jimeng-high-aes-general-v21-L'
 export const jimengSeedreamProvider: ProviderAdapter = {
   id: 'jimeng-seedream',
   displayName: '即梦 Seedream',
+  defaultModel: DEFAULT_MODEL,
   capabilities: {
     textToImage: true,
     imageToImage: true,
