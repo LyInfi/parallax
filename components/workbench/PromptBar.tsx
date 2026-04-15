@@ -2,7 +2,7 @@
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { AttachmentUploader } from './AttachmentUploader'
+import { AttachmentTrigger, AttachmentThumbs } from './AttachmentUploader'
 
 type Props = { onGenerate: () => void; busy?: boolean; onCancel?: () => void }
 
@@ -11,13 +11,17 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
   const disabled = !prompt.trim() || !!busy
   return (
     <div className="border-t p-3 space-y-2 bg-background">
-      <Textarea
-        placeholder="Describe what you want to generate…"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        rows={3}
-      />
-      <AttachmentUploader />
+      <AttachmentThumbs />
+      <div className="flex gap-2 items-start">
+        <AttachmentTrigger />
+        <Textarea
+          placeholder="Describe what you want to generate…"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={3}
+          className="flex-1"
+        />
+      </div>
       <div className="flex gap-2 items-center">
         <select
           aria-label="size"
@@ -36,8 +40,8 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
           className="border rounded px-2 py-1 w-16 text-sm"
         />
         <div className="flex-1" />
-        {busy && onCancel && <Button variant="outline" onClick={onCancel}>Cancel</Button>}
-        <Button onClick={onGenerate} disabled={disabled}>Generate</Button>
+        {busy && onCancel && <Button variant="outline" onClick={onCancel}>取消</Button>}
+        <Button onClick={onGenerate} disabled={disabled}>生成</Button>
       </div>
     </div>
   )
