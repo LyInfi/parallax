@@ -27,11 +27,12 @@ type Props = {
   /** Effective model id to display on the card and stamp onto saved assets */
   modelName?: string
   onRemove: () => void
+  onRegenerate: () => void
   onDeriveFrom: (url: string) => void
 }
 
 export const CardController = forwardRef<CardControllerHandle, Props>(function CardController(
-  { cardId, providerId, providerName, modelName, onRemove, onDeriveFrom }, ref,
+  { cardId, providerId, providerName, modelName, onRemove, onRegenerate, onDeriveFrom }, ref,
 ) {
   const gen = useGenerate()
   const [lastCtx, setLastCtx] = useState<{
@@ -201,6 +202,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
       }}
       onFavorite={saveFavorite}
       onDownload={download}
+      onRegenerate={() => onRegenerate()}
       onDeriveFrom={onDeriveFrom}
       onRemove={onRemove}
     />

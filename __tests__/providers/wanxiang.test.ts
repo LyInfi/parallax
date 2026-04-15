@@ -72,7 +72,7 @@ describe('wanxiangProvider', () => {
 
   it('has expected capabilities', () => {
     expect(wanxiangProvider.capabilities.textToImage).toBe(true)
-    expect(wanxiangProvider.capabilities.imageToImage).toBe(false)
+    expect(wanxiangProvider.capabilities.imageToImage).toBe(true)
     expect(wanxiangProvider.capabilities.maxImages).toBeGreaterThan(0)
     expect(wanxiangProvider.capabilities.sizes.length).toBeGreaterThan(0)
   })

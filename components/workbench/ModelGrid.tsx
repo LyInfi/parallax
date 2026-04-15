@@ -1,40 +1,37 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useModelStore } from '@/lib/store/useModelStore'
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { CardController, type CardControllerHandle } from './CardController'
 import { PromptBar } from './PromptBar'
-import { MultiModelPicker } from './MultiModelPicker'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
-import { putAsset, putSession } from '@/lib/storage/gallery'
+import { putSession } from '@/lib/storage/gallery'
 import { fetchImageBlob } from '@/lib/image-fetch'
 import { getConfig } from '@/lib/storage/keys'
+import { toast } from 'sonner'
+
+bootstrapProviders()
 
 function effectiveModel(providerId: string, defaultModel?: string): string | undefined {
   const override = getConfig(providerId).model?.trim()
   return override || defaultModel
 }
 
-bootstrapProviders()
-
 export function ModelGrid() {
   const { cards, removeCard } = useModelStore()
-  usePromptStore() // subscribed for re-renders; live values read via getState() in runAll
+  usePromptStore() // subscribe for re-renders; live values read via getState()
   const providers = listProviders()
   const byId = new Map(providers.map(p => [p.id, p]))
   const controllers = useRef<Map<string, CardControllerHandle>>(new Map())
 
-  const [pendingRef, setPendingRef] = useState<{ blob: Blob; parentAssetId?: string } | null>(null)
-  const [pickerOpen, setPickerOpen] = useState(false)
-
-  const runAll = async () => {
-    const latest = useModelStore.getState().cards
+  const runCards = async (cardIds: string[]) => {
+    const allCards = useModelStore.getState().cards.filter(c => cardIds.includes(c.cardId))
+    if (allCards.length === 0) return
     const ps = usePromptStore.getState()
-    if (latest.length === 0) return
     const sessionId = crypto.randomUUID()
     const models: Record<string, string> = {}
-    for (const c of latest) {
+    for (const c of allCards) {
       const m = effectiveModel(c.providerId, byId.get(c.providerId)?.defaultModel)
       if (m) models[c.providerId] = m
     }
@@ -42,46 +39,48 @@ export function ModelGrid() {
       id: sessionId,
       prompt: ps.prompt,
       params: { size: ps.params.size, n: ps.params.n, seed: ps.params.seed },
-      providerIds: latest.map(c => c.providerId),
+      providerIds: allCards.map(c => c.providerId),
       models,
       createdAt: Date.now(),
-      parentAssetId: pendingRef?.parentAssetId,
     })
-    for (const c of latest) {
+    for (const c of allCards) {
       controllers.current.get(c.cardId)?.run({
         sessionId,
-        prompt: ps.prompt, attachments: ps.attachments,
-        size: ps.params.size, n: ps.params.n, seed: ps.params.seed,
-        parentAssetId: pendingRef?.parentAssetId,
+        prompt: ps.prompt,
+        attachments: ps.attachments,
+        size: ps.params.size,
+        n: ps.params.n,
+        seed: ps.params.seed,
       })
     }
   }
+
+  const runAll = () => runCards(useModelStore.getState().cards.map(c => c.cardId))
+  const regenerateCard = (cardId: string) => runCards([cardId])
   const cancelAll = () => { controllers.current.forEach(c => c.cancel()) }
 
-  const deriveFrom = async (url: string) => {
-    const blob = await fetchImageBlob(url)
-    setPendingRef({ blob })
-    setPickerOpen(true)
-  }
-
-  const confirmDerive = async (ids: string[]) => {
-    if (!pendingRef) return
-    const parentId = crypto.randomUUID()
-    await putAsset({
-      id: parentId, sessionId: 'derive-source', providerId: 'derive',
-      blob: pendingRef.blob, thumbBlob: pendingRef.blob,
-      meta: { prompt: usePromptStore.getState().prompt, params: {}, createdAt: Date.now(), favorited: false },
-    })
-    const f = new File([pendingRef.blob], 'ref.png', { type: pendingRef.blob.type })
-    usePromptStore.getState().setAttachments([f])
-    useModelStore.setState({ cards: ids.map(id => ({ cardId: crypto.randomUUID(), providerId: id })) })
-    setPendingRef({ blob: pendingRef.blob, parentAssetId: parentId })
-    requestAnimationFrame(() => requestAnimationFrame(runAll))
+  /**
+   * Add the given image as the current reference attachment.
+   * Does NOT trigger generation — user continues editing prompt, then clicks Generate.
+   */
+  const useAsReference = async (url: string) => {
+    try {
+      const blob = await fetchImageBlob(url)
+      const f = new File([blob], 'reference.png', { type: blob.type || 'image/png' })
+      usePromptStore.getState().setAttachments([f])
+      toast.success('已作为参考图加入，编辑提示词后点击生成')
+    } catch (e) {
+      console.error('[useAsReference] failed', e)
+      toast.error('加载参考图失败')
+    }
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-3rem)]">
-      <div className="flex-1 overflow-auto p-4 grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+      <div
+        className="flex-1 overflow-auto p-4 grid gap-4"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
+      >
         {cards.map(c => {
           const p = byId.get(c.providerId)
           return (
@@ -93,7 +92,8 @@ export function ModelGrid() {
               providerName={p?.displayName ?? c.providerId}
               modelName={effectiveModel(c.providerId, p?.defaultModel)}
               onRemove={() => removeCard(c.cardId)}
-              onDeriveFrom={deriveFrom}
+              onRegenerate={() => regenerateCard(c.cardId)}
+              onDeriveFrom={useAsReference}
             />
           )
         })}
@@ -104,12 +104,6 @@ export function ModelGrid() {
         )}
       </div>
       <PromptBar onGenerate={runAll} onCancel={cancelAll} />
-      <MultiModelPicker
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        providers={providers}
-        onConfirm={confirmDerive}
-      />
     </div>
   )
 }

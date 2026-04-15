@@ -8,13 +8,14 @@ type Props = {
   providerName: string
   modelName?: string
   onRetry?: () => void
+  onRegenerate?: (url: string) => void
   onFavorite?: (url: string) => void
   onDownload?: (url: string) => void
   onDeriveFrom?: (url: string) => void
   onRemove?: () => void
 }
 
-export function ModelCard({ card, providerName, modelName, onRetry, onFavorite, onDownload, onDeriveFrom, onRemove }: Props) {
+export function ModelCard({ card, providerName, modelName, onRetry, onRegenerate, onFavorite, onDownload, onDeriveFrom, onRemove }: Props) {
   return (
     <Card className="p-3 space-y-2 relative">
       <div className="flex justify-between items-start gap-2">
@@ -51,8 +52,11 @@ export function ModelCard({ card, providerName, modelName, onRetry, onFavorite, 
                 {onDownload && (
                   <Button size="sm" variant="secondary" title="下载" onClick={() => onDownload(img.url)}>⬇</Button>
                 )}
+                {onRegenerate && (
+                  <Button size="sm" variant="secondary" title="重新生成（用当前提示词）" onClick={() => onRegenerate(img.url)}>🔄</Button>
+                )}
                 {onDeriveFrom && (
-                  <Button size="sm" variant="secondary" title="以此为基础继续" onClick={() => onDeriveFrom(img.url)}>🔁</Button>
+                  <Button size="sm" variant="secondary" title="作为参考图" onClick={() => onDeriveFrom(img.url)}>🔁</Button>
                 )}
               </div>
             </div>
