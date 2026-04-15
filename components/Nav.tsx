@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { AddModelButton } from './AddModelButton'
+import { ClearBenchButton } from './ClearBenchButton'
 
 export function Nav() {
   return (
@@ -8,6 +9,7 @@ export function Nav() {
       <Link href="/gallery">Gallery</Link>
       <Link href="/settings">Settings</Link>
       <div className="flex-1" />
+      <ClearBenchButton />
       <AddModelButton />
     </nav>
   )
