@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { bootstrapProviders } from '@/lib/providers'
 import { getProvider } from '@/lib/providers/registry'
 import { GenerateInputSchema } from '@/lib/providers/types'
-import { resolveSize } from '@/lib/providers/size-catalog'
 import { sseResponse } from '@/lib/sse/server'
 
 export const runtime = 'nodejs'
@@ -28,7 +27,5 @@ export async function POST(req: Request): Promise<Response> {
 
   const ac = new AbortController()
   req.signal.addEventListener('abort', () => ac.abort(), { once: true })
-  const desiredSize = parsed.data.input.size ?? adapter.capabilities.sizes[0]
-  const resolvedInput = { ...parsed.data.input, size: resolveSize(desiredSize, adapter.capabilities.sizes) }
-  return sseResponse(adapter.generate(resolvedInput, apiKey, ac.signal), ac.signal)
+  return sseResponse(adapter.generate(parsed.data.input, apiKey, ac.signal), ac.signal)
 }

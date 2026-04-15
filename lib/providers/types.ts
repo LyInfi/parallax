@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import { dimensionsFor, inferAspect, inferTier } from './aspect'
+import type { Aspect, Tier } from './aspect'
+
+export type { Aspect, Tier }
 
 export const ConfigFieldSchema = z.object({
   id: z.string(),
@@ -26,10 +30,19 @@ export function getConfigFields(p: { capabilities: Capabilities }): ConfigField[
   return p.capabilities.configFields ?? []
 }
 
+export const AspectLiteral = z.enum(['1:1', '16:9', '9:16', '4:3', '3:4'])
+export const TierLiteral = z.enum(['standard', 'hd', 'ultra'])
+
+export const SizeSpecSchema = z.union([
+  z.string(),
+  z.object({ aspect: AspectLiteral, tier: TierLiteral }),
+])
+export type SizeSpec = z.infer<typeof SizeSpecSchema>
+
 export const GenerateInputSchema = z.object({
   prompt: z.string().min(1),
   referenceImages: z.array(z.union([z.string(), z.instanceof(Blob)])).optional(),
-  size: z.string().optional(),
+  size: SizeSpecSchema.optional(),
   n: z.number().int().positive().max(8).optional(),
   seed: z.number().int().optional(),
   providerOverrides: z.record(z.string(), z.unknown()).optional(),
@@ -63,4 +76,21 @@ export class GenerateError extends Error {
     super(message)
     this.name = 'GenerateError'
   }
+}
+
+export function expectedDimensions(
+  spec: SizeSpec | undefined,
+  aspectFallback: Aspect = '1:1',
+  tierFallback: Tier = 'hd',
+): { w: number; h: number; spec: { aspect: Aspect; tier: Tier } } {
+  if (typeof spec === 'string') {
+    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
+    if (m) {
+      const w = +m[1], h = +m[2]
+      return { w, h, spec: { aspect: inferAspect(w, h), tier: inferTier(w, h) } }
+    }
+    return { ...dimensionsFor(aspectFallback, tierFallback), spec: { aspect: aspectFallback, tier: tierFallback } }
+  }
+  const s = spec ?? { aspect: aspectFallback, tier: tierFallback }
+  return { ...dimensionsFor(s.aspect, s.tier), spec: s }
 }
