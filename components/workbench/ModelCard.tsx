@@ -38,16 +38,22 @@ export function ModelCard({ card, providerName, modelName, onRetry, onFavorite, 
       {card.status === 'done' && card.images.length > 0 && (
         <div className="space-y-2">
           {card.images.map((img, i) => (
-            <div key={i} className="space-y-1">
+            <div key={i} className="relative group">
               <img
                 src={img.url}
                 alt={`${providerName}-${i}`}
-                className="w-full h-auto max-h-[70vh] object-contain rounded bg-muted"
+                className="w-full h-auto max-h-[60vh] object-contain rounded bg-muted"
               />
-              <div className="flex gap-1">
-                {onFavorite && <Button size="sm" variant="secondary" onClick={() => onFavorite(img.url)}>❤</Button>}
-                {onDownload && <Button size="sm" variant="secondary" onClick={() => onDownload(img.url)}>⬇</Button>}
-                {onDeriveFrom && <Button size="sm" variant="secondary" onClick={() => onDeriveFrom(img.url)}>🔁</Button>}
+              <div className="absolute top-1 right-1 flex gap-1 bg-background/80 backdrop-blur rounded p-1 shadow">
+                {onFavorite && (
+                  <Button size="sm" variant="secondary" title="收藏" onClick={() => onFavorite(img.url)}>❤</Button>
+                )}
+                {onDownload && (
+                  <Button size="sm" variant="secondary" title="下载" onClick={() => onDownload(img.url)}>⬇</Button>
+                )}
+                {onDeriveFrom && (
+                  <Button size="sm" variant="secondary" title="以此为基础继续" onClick={() => onDeriveFrom(img.url)}>🔁</Button>
+                )}
               </div>
             </div>
           ))}
