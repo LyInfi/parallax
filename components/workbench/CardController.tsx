@@ -3,7 +3,7 @@ import { useImperativeHandle, forwardRef, useState, useEffect, useRef } from 're
 import { ModelCard } from './ModelCard'
 import { useGenerate } from '@/lib/hooks/useGenerate'
 import { getCreds, getConfig } from '@/lib/storage/keys'
-import { putAsset, setFavorite } from '@/lib/storage/gallery'
+import { putAsset, setFavorite, latestAssetsOfCard } from '@/lib/storage/gallery'
 import { fetchImageBlob } from '@/lib/image-fetch'
 import { toast } from 'sonner'
 
@@ -43,6 +43,34 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
 
   const seenUrls = useRef(new Set<string>())
   const urlToAsset = useRef(new Map<string, string>())
+  // Restored images from the last generation for this card, rehydrated on mount
+  const [restoredImages, setRestoredImages] = useState<{ url: string; assetId: string }[]>([])
+  const objectUrlsRef = useRef<string[]>([])
+
+  // Rehydrate latest-session images for this card on mount
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const assets = await latestAssetsOfCard(cardId)
+        if (cancelled || assets.length === 0) return
+        const items = assets.map(a => {
+          const url = URL.createObjectURL(a.blob)
+          objectUrlsRef.current.push(url)
+          urlToAsset.current.set(url, a.id)
+          return { url, assetId: a.id }
+        })
+        setRestoredImages(items)
+      } catch (e) {
+        console.error('[rehydrate] failed', cardId, e)
+      }
+    })()
+    return () => {
+      cancelled = true
+      objectUrlsRef.current.forEach(URL.revokeObjectURL)
+      objectUrlsRef.current = []
+    }
+  }, [cardId])
 
   useImperativeHandle(ref, () => ({
     run: ({ sessionId, prompt, attachments, size, n, seed, parentAssetId }) => {
@@ -62,6 +90,10 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
       // Clear seen URLs so a new generation auto-saves fresh
       seenUrls.current.clear()
       urlToAsset.current.clear()
+      // Drop restored previews (new generation in progress)
+      objectUrlsRef.current.forEach(URL.revokeObjectURL)
+      objectUrlsRef.current = []
+      setRestoredImages([])
       setLastCtx({ sessionId, prompt, params: { size, n, seed }, parentAssetId })
       gen.start({
         providerId, apiKey: keyPayload,
@@ -96,6 +128,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
               favorited: false,
               parentAssetId: lastCtx?.parentAssetId,
               ...(modelName && { model: modelName }),
+              cardId,
             },
           })
           urlToAsset.current.set(url, id)
@@ -144,9 +177,15 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     a.click()
   }
 
+  const showingRestored = gen.images.length === 0 && restoredImages.length > 0 && gen.status === 'idle'
+  const displayImages = showingRestored
+    ? restoredImages.map(r => ({ url: r.url }))
+    : gen.images.map(u => ({ url: u }))
+  const displayStatus = showingRestored ? 'done' : gen.status
+
   return (
     <ModelCard
-      card={{ cardId, providerId, status: gen.status, images: gen.images.map(u => ({ url: u })), error: gen.error ?? undefined }}
+      card={{ cardId, providerId, status: displayStatus, images: displayImages, error: gen.error ?? undefined }}
       providerName={providerName}
       modelName={modelName}
       onRetry={() => {

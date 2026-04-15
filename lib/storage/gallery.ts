@@ -13,6 +13,7 @@ export type Asset = {
     favorited: boolean
     parentAssetId?: string
     model?: string
+    cardId?: string
   }
 }
 
@@ -39,6 +40,10 @@ class GalleryDb extends Dexie {
       assets: 'id, sessionId, providerId, meta.createdAt, meta.parentAssetId, meta.favorited',
       sessions: 'id, createdAt',
     })
+    this.version(3).stores({
+      assets: 'id, sessionId, providerId, meta.createdAt, meta.parentAssetId, meta.favorited, meta.cardId',
+      sessions: 'id, createdAt',
+    })
   }
 }
 
@@ -60,6 +65,18 @@ export async function setFavorite(id: string, favorited: boolean) {
 }
 export async function childrenOf(parentAssetId: string) {
   return galleryDb.assets.where('meta.parentAssetId').equals(parentAssetId).toArray()
+}
+
+/**
+ * Return assets from the latest generation for a given cardId, ordered by creation.
+ * "Latest generation" = all assets sharing the most recent `sessionId` among this card's assets.
+ */
+export async function latestAssetsOfCard(cardId: string): Promise<Asset[]> {
+  const rows = await galleryDb.assets.where('meta.cardId').equals(cardId).toArray()
+  if (rows.length === 0) return []
+  rows.sort((a, b) => b.meta.createdAt - a.meta.createdAt)
+  const latestSessionId = rows[0].sessionId
+  return rows.filter(r => r.sessionId === latestSessionId).sort((a, b) => a.meta.createdAt - b.meta.createdAt)
 }
 
 // session helpers
