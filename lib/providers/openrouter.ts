@@ -14,46 +14,42 @@ import { expectedDimensions } from './types'
 const DEFAULT_MODEL = 'google/gemini-2.5-flash-image'
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
 
-export function openrouterResolveNative(spec: SizeSpec | undefined): string {
-  if (typeof spec === 'string') {
-    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
-    if (m) return `${m[1]}x${m[2]}`
-  }
-  const { w, h } = expectedDimensions(spec, '1:1', 'hd')
-  return `${w}x${h}`
+// Official OpenRouter aspect → native dimensions (per image_config docs)
+const OR_ASPECT_DIMS: Record<string, string> = {
+  '1:1': '1024×1024', '16:9': '1344×768', '9:16': '768×1344',
+  '4:3': '1184×864', '3:4': '864×1184',
 }
 
-// OpenRouter /chat/completions has no standard aspect-ratio parameter. Inject an aspect
-// hint into the prompt text so upstream image models (Gemini, Flux, etc.) honor it.
-function aspectHint(spec: GenerateInput['size']): string {
-  if (!spec) return ''
-  if (typeof spec === 'string') return ''
-  const map: Record<string, string> = {
-    '1:1':  'Aspect ratio 1:1 (square).',
-    '16:9': 'Aspect ratio 16:9 (wide landscape).',
-    '9:16': 'Aspect ratio 9:16 (tall portrait).',
-    '4:3':  'Aspect ratio 4:3 (landscape).',
-    '3:4':  'Aspect ratio 3:4 (portrait).',
-  }
-  return map[spec.aspect] ?? ''
+export function openrouterResolveNative(spec: SizeSpec | undefined): string {
+  if (!spec) return '1024×1024'
+  if (typeof spec === 'string') return spec
+  const dim = OR_ASPECT_DIMS[spec.aspect] ?? '1024×1024'
+  const tierLabel: Record<string, string> = { standard: '1K', hd: '2K', ultra: '4K' }
+  return `${spec.aspect}${tierLabel[spec.tier] ? ` · ${tierLabel[spec.tier]}` : ''} (${dim})`
 }
 
 function buildMessages(input: GenerateInput) {
-  const hint = aspectHint(input.size)
-  const text = hint ? `${input.prompt}\n\n${hint}` : input.prompt
-  const content: unknown[] = [{ type: 'text', text }]
-
-  // Handle referenceImages: may be base64 data URL strings (runtime path) or Blobs (type path)
+  const content: unknown[] = [{ type: 'text', text: input.prompt }]
   if (input.referenceImages && input.referenceImages.length > 0) {
     for (const img of input.referenceImages) {
       if (typeof img === 'string' && img.startsWith('data:')) {
         content.push({ type: 'image_url', image_url: { url: img } })
       }
-      // Blob handling: skip in this adapter — OpenRouter expects URLs not raw Blobs
     }
   }
-
   return [{ role: 'user', content }]
+}
+
+// OpenRouter image_config per https://openrouter.ai/docs/features/multimodal/image-generation
+// Supported aspect_ratio: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
+// image_size: "1K" | "2K" | "4K" (honored by models that support it, e.g. gemini-3.1-flash-image-preview)
+function imageConfigFor(size: GenerateInput['size']): Record<string, string> | undefined {
+  if (!size || typeof size === 'string') return undefined
+  const tierMap: Record<string, string> = { standard: '1K', hd: '2K', ultra: '4K' }
+  const cfg: Record<string, string> = { aspect_ratio: size.aspect }
+  const imgSize = tierMap[size.tier]
+  if (imgSize) cfg.image_size = imgSize
+  return cfg
 }
 
 export const openrouterProvider: ProviderAdapter = {
@@ -82,11 +78,12 @@ export const openrouterProvider: ProviderAdapter = {
         ? input.providerOverrides.model
         : DEFAULT_MODEL
 
+    const imageConfig = imageConfigFor(input.size)
     const body: Record<string, unknown> = {
       model,
       messages: buildMessages(input),
       modalities: ['image', 'text'],
-      size: openrouterResolveNative(input.size),
+      ...(imageConfig && { image_config: imageConfig }),
     }
 
     // Pass n if specified (some models support it)
