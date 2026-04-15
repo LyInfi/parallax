@@ -3,7 +3,6 @@ import { useRef, useState } from 'react'
 import { useModelStore } from '@/lib/store/useModelStore'
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { CardController, type CardControllerHandle } from './CardController'
-import { AddModelCard } from './AddModelCard'
 import { PromptBar } from './PromptBar'
 import { MultiModelPicker } from './MultiModelPicker'
 import { listProviders } from '@/lib/providers/registry'
@@ -13,7 +12,7 @@ import { putAsset } from '@/lib/storage/gallery'
 bootstrapProviders()
 
 export function ModelGrid() {
-  const { cards, addCard, removeCard } = useModelStore()
+  const { cards, removeCard } = useModelStore()
   usePromptStore() // subscribed for re-renders; live values read via getState() in runAll
   const providers = listProviders()
   const byId = new Map(providers.map(p => [p.id, p]))
@@ -73,7 +72,11 @@ export function ModelGrid() {
             />
           )
         })}
-        <AddModelCard providers={providers} onAdd={addCard} />
+        {cards.length === 0 && (
+          <div className="col-span-full text-center text-muted-foreground py-20">
+            点击右上角 "+ 添加模型" 开始
+          </div>
+        )}
       </div>
       <PromptBar onGenerate={runAll} onCancel={cancelAll} />
       <MultiModelPicker
