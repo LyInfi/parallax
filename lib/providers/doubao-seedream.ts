@@ -28,7 +28,8 @@ export const doubaoSeedreamProvider: ProviderAdapter = {
     textToImage: true,
     imageToImage: false,
     maxImages: 4,
-    sizes: ['1024x1024', '512x512', '768x1024', '1024x768', '1280x720', '720x1280'],
+    // Seedream 4.0 requires at least 3,686,400 pixels per image
+    sizes: ['2048x2048', '2304x1728', '1728x2304', '2560x1440', '1440x2560'],
     configFields: [
       {
         id: 'model',
