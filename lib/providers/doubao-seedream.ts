@@ -34,7 +34,6 @@ export const doubaoSeedreamProvider: ProviderAdapter = {
         id: 'model',
         label: '模型 ID',
         placeholder: 'doubao-seedream-4-0-250828',
-        default: 'doubao-seedream-4-0-250828',
       },
     ],
   },

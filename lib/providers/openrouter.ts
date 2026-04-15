@@ -43,7 +43,6 @@ export const openrouterProvider: ProviderAdapter = {
         id: 'model',
         label: '模型 ID（OpenRouter model slug）',
         placeholder: 'google/gemini-2.5-flash-image',
-        default: 'google/gemini-2.5-flash-image',
       },
     ],
   },

@@ -79,7 +79,6 @@ export const wanxiangProvider: ProviderAdapter = {
         id: 'model',
         label: '模型 ID（wan2.7-image-pro / wan2.7-image / wanx2.1-t2i-turbo ...）',
         placeholder: 'wan2.7-image-pro',
-        default: 'wan2.7-image-pro',
       },
     ],
   },

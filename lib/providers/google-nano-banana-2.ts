@@ -59,7 +59,6 @@ export const googleNanoBanana2Provider: ProviderAdapter = {
         id: 'model',
         label: '模型 ID',
         placeholder: 'gemini-3.1-flash-image-preview',
-        default: 'gemini-3.1-flash-image-preview',
       },
     ],
   },

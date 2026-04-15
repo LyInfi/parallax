@@ -37,7 +37,6 @@ export const jimengSeedreamProvider: ProviderAdapter = {
         id: 'model',
         label: '模型 ID',
         placeholder: 'jimeng-high-aes-general-v21-L',
-        default: 'jimeng-high-aes-general-v21-L',
       },
     ],
   },

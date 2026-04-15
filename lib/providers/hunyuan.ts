@@ -88,7 +88,6 @@ export const hunyuanProvider: ProviderAdapter = {
         id: 'region',
         label: '地域（ap-guangzhou / ap-beijing / ap-shanghai ...）',
         placeholder: 'ap-guangzhou',
-        default: 'ap-guangzhou',
       },
     ],
   },
