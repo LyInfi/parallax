@@ -58,7 +58,8 @@ describe('doubaoSeedreamProvider', () => {
     expect(body.model).toBe('doubao-seedream-4-0-250828')
     expect(body.prompt).toBe('a mountain')
     expect(body.n).toBe(1)
-    expect(body.size).toBe('1024x1024')
+    // Default size is now 2048x2048 (aspect=1:1, tier=hd) — Seedream 4.0 minimum pixel requirement
+    expect(body.size).toBe('2048x2048')
   })
 
   it('happy path with n=2: yields 2 image events', async () => {

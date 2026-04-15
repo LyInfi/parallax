@@ -17,12 +17,31 @@
 // The two providers (doubao-seedream, jimeng-seedream) share technical implementation but differ
 // in: (1) model ID, (2) product branding, (3) potentially different quota pools on the same API key.
 
-import type { ProviderAdapter, GenerateEvent, GenerateInput } from './types'
+import type { ProviderAdapter, GenerateEvent, GenerateInput, SizeSpec } from './types'
+import { expectedDimensions } from './types'
 
 const ENDPOINT = 'https://ark.cn-beijing.volces.com/api/v3/images/generations'
 // 即梦 model ID — uses jimeng- prefix on the same 火山方舟 platform
 // Confirmed format from Volcengine product pages and community resources
 const DEFAULT_MODEL = 'jimeng-high-aes-general-v21-L'
+
+// Seedream infra: ≥ 3,686,400 pixels required. Same table as doubao-seedream.
+const SEEDREAM_SIZE_TABLE: Record<string, Record<string, string>> = {
+  '1:1':  { standard: '2048x2048', hd: '2048x2048', ultra: '2816x2816' },
+  '16:9': { standard: '2560x1440', hd: '2560x1440', ultra: '3840x2160' },
+  '9:16': { standard: '1440x2560', hd: '1440x2560', ultra: '2160x3840' },
+  '4:3':  { standard: '2304x1728', hd: '2304x1728', ultra: '3072x2304' },
+  '3:4':  { standard: '1728x2304', hd: '1728x2304', ultra: '2304x3072' },
+}
+
+export function jimengResolveNative(spec: SizeSpec | undefined): string {
+  if (typeof spec === 'string') {
+    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
+    if (m) return `${m[1]}x${m[2]}`
+  }
+  const { aspect, tier } = expectedDimensions(spec, '1:1', 'hd').spec
+  return SEEDREAM_SIZE_TABLE[aspect]?.[tier] ?? '2048x2048'
+}
 
 export const jimengSeedreamProvider: ProviderAdapter = {
   id: 'jimeng-seedream',
@@ -51,7 +70,7 @@ export const jimengSeedreamProvider: ProviderAdapter = {
         ? input.providerOverrides.model
         : DEFAULT_MODEL
 
-    const size = input.size ?? '1024x1024'
+    const size = jimengResolveNative(input.size)
     const n = input.n ?? 1
 
     const body: Record<string, unknown> = {

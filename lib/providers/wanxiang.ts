@@ -21,7 +21,8 @@
 // Custom: "<width>*<height>" (total pixels within range, aspect ratio [1:8, 8:1])
 // Note: Image URLs expire after 24 hours.
 
-import type { ProviderAdapter, GenerateEvent, GenerateInput } from './types'
+import type { ProviderAdapter, GenerateEvent, GenerateInput, SizeSpec } from './types'
+import { expectedDimensions } from './types'
 
 const CREATE_URL =
   'https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation'
@@ -36,6 +37,27 @@ const DEFAULT_MODEL = 'wan2.7-image-pro'
 
 export const POLL_INTERVAL_MS = 2000
 const MAX_POLLS = 60 // 120s total at 2s interval
+
+// Wan 2.7 size table: 1:1 uses presets (1K/2K/4K); non-square uses custom WxH.
+const WANXIANG_SIZE_TABLE: Record<string, Record<string, string>> = {
+  '1:1':  { standard: '1K',       hd: '2K',       ultra: '4K'       },
+  '16:9': { standard: '1280x720', hd: '2048x1152', ultra: '3840x2160' },
+  '9:16': { standard: '720x1280', hd: '1152x2048', ultra: '2160x3840' },
+  '4:3':  { standard: '1024x768', hd: '2048x1536', ultra: '3072x2304' },
+  '3:4':  { standard: '768x1024', hd: '1536x2048', ultra: '2304x3072' },
+}
+
+export function wanxiangResolveNative(spec: SizeSpec | undefined): string {
+  // Legacy string pass-through: honour known preset strings and WxH directly.
+  if (typeof spec === 'string') {
+    const upper = spec.trim().toUpperCase()
+    if (upper === '1K' || upper === '2K' || upper === '4K') return upper
+    const m = spec.match(/^(\d+)[x*](\d+)$/i)
+    if (m) return `${m[1]}x${m[2]}`
+  }
+  const { aspect, tier } = expectedDimensions(spec, '1:1', 'hd').spec
+  return WANXIANG_SIZE_TABLE[aspect]?.[tier] ?? '2K'
+}
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -92,7 +114,7 @@ export const wanxiangProvider: ProviderAdapter = {
         ? input.providerOverrides.model
         : DEFAULT_MODEL
 
-    const size = input.size ?? '2K'
+    const size = wanxiangResolveNative(input.size)
     const n = input.n ?? 1
 
     // Build message content: text prompt + optional reference images (img2img)

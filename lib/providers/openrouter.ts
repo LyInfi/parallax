@@ -8,10 +8,20 @@
 // Default model: google/gemini-2.5-flash-image (confirmed from OpenRouter image-gen docs).
 // Override via input.providerOverrides.model
 
-import type { ProviderAdapter, GenerateEvent, GenerateInput } from './types'
+import type { ProviderAdapter, GenerateEvent, GenerateInput, SizeSpec } from './types'
+import { expectedDimensions } from './types'
 
 const DEFAULT_MODEL = 'google/gemini-2.5-flash-image'
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
+
+export function openrouterResolveNative(spec: SizeSpec | undefined): string {
+  if (typeof spec === 'string') {
+    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
+    if (m) return `${m[1]}x${m[2]}`
+  }
+  const { w, h } = expectedDimensions(spec, '1:1', 'hd')
+  return `${w}x${h}`
+}
 
 function buildMessages(input: GenerateInput) {
   const content: unknown[] = [{ type: 'text', text: input.prompt }]
@@ -60,6 +70,7 @@ export const openrouterProvider: ProviderAdapter = {
       model,
       messages: buildMessages(input),
       modalities: ['image', 'text'],
+      size: openrouterResolveNative(input.size),
     }
 
     // Pass n if specified (some models support it)

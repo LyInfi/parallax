@@ -1,4 +1,5 @@
-import type { ProviderAdapter, GenerateEvent } from './types'
+import type { ProviderAdapter, GenerateEvent, SizeSpec } from './types'
+import { dimensionsFor } from './aspect'
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
@@ -8,6 +9,17 @@ const sleep = (ms: number, signal: AbortSignal) =>
   })
 
 const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAfbLI3wAAAABJRU5ErkJggg=='
+
+export function mockResolveNative(spec: SizeSpec | undefined): string {
+  if (typeof spec === 'string') {
+    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
+    if (m) return `${m[1]}x${m[2]}`
+    return '1024x1024'
+  }
+  const s = spec ?? { aspect: '1:1' as const, tier: 'hd' as const }
+  const { w, h } = dimensionsFor(s.aspect, s.tier)
+  return `${w}x${h}`
+}
 
 export const mockProvider: ProviderAdapter = {
   id: 'mock',

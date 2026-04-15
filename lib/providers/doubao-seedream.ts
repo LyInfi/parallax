@@ -15,11 +15,32 @@
 // NOTE: 豆包 Seedream and 即梦 Seedream use the same 火山方舟 endpoint but different model IDs.
 // The ARK_API_KEY is the Volcano Ark access key (获取方式: 火山方舟控制台 → API Key 管理).
 
-import type { ProviderAdapter, GenerateEvent, GenerateInput } from './types'
+import type { ProviderAdapter, GenerateEvent, GenerateInput, SizeSpec } from './types'
+import { expectedDimensions } from './types'
 
 const ENDPOINT = 'https://ark.cn-beijing.volces.com/api/v3/images/generations'
 // doubao-seedream-4-0-250828 is Seedream 4.0 GA model (confirmed via Volcengine product announcements)
 const DEFAULT_MODEL = 'doubao-seedream-4-0-250828'
+
+// Seedream 4.0 requires ≥ 3,686,400 pixels. Native size table per (aspect, tier).
+const SEEDREAM_SIZE_TABLE: Record<string, Record<string, string>> = {
+  '1:1':  { standard: '2048x2048', hd: '2048x2048', ultra: '2816x2816' },
+  '16:9': { standard: '2560x1440', hd: '2560x1440', ultra: '3840x2160' },
+  '9:16': { standard: '1440x2560', hd: '1440x2560', ultra: '2160x3840' },
+  '4:3':  { standard: '2304x1728', hd: '2304x1728', ultra: '3072x2304' },
+  '3:4':  { standard: '1728x2304', hd: '1728x2304', ultra: '2304x3072' },
+}
+
+export function doubaoResolveNative(spec: SizeSpec | undefined): string {
+  // Legacy string pass-through: if a raw WxH string is provided, honour it directly.
+  if (typeof spec === 'string') {
+    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
+    if (m) return `${m[1]}x${m[2]}`
+    // Non-WxH string (e.g. old preset) — fall through to default
+  }
+  const { aspect, tier } = expectedDimensions(spec, '1:1', 'hd').spec
+  return SEEDREAM_SIZE_TABLE[aspect]?.[tier] ?? '2048x2048'
+}
 
 export const doubaoSeedreamProvider: ProviderAdapter = {
   id: 'doubao-seedream',
@@ -48,7 +69,7 @@ export const doubaoSeedreamProvider: ProviderAdapter = {
         ? input.providerOverrides.model
         : DEFAULT_MODEL
 
-    const size = input.size ?? '1024x1024'
+    const size = doubaoResolveNative(input.size)
     const n = input.n ?? 1
 
     const body: Record<string, unknown> = {

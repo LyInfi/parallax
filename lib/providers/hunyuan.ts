@@ -1,5 +1,6 @@
 import { createHash, createHmac } from 'node:crypto'
-import type { ProviderAdapter, GenerateEvent } from './types'
+import type { ProviderAdapter, GenerateEvent, SizeSpec } from './types'
+import { expectedDimensions } from './types'
 
 function sha256hex(s: string | Buffer): string {
   return createHash('sha256').update(s).digest('hex')
@@ -74,6 +75,35 @@ export function signTC3({
   }
 }
 
+// Hunyuan has fixed Resolution values in colon-separated format.
+// Map aspect to nearest fixed resolution; tier is ignored.
+export function hunyuanResolveNative(spec: SizeSpec | undefined): string {
+  if (typeof spec === 'string') {
+    // Legacy format: might already be "1024:1024" or "768:1024" etc.
+    if (/^\d+:\d+$/.test(spec)) return spec
+    // Try to infer aspect from WxH
+    const m = spec.match(/^(\d+)[x*×](\d+)$/i)
+    if (m) {
+      const { spec: s } = expectedDimensions(spec, '1:1', 'hd')
+      return aspectToHunyuan(s.aspect)
+    }
+    return '1024:1024'
+  }
+  const { aspect } = expectedDimensions(spec, '1:1', 'hd').spec
+  return aspectToHunyuan(aspect)
+}
+
+function aspectToHunyuan(aspect: string): string {
+  switch (aspect) {
+    case '1:1': return '1024:1024'
+    case '9:16':
+    case '3:4':  return '768:1024'
+    case '16:9':
+    case '4:3':  return '1024:768'
+    default:     return '1024:1024'
+  }
+}
+
 export const hunyuanProvider: ProviderAdapter = {
   id: 'hunyuan',
   displayName: '腾讯混元生图',
@@ -113,9 +143,11 @@ export const hunyuanProvider: ProviderAdapter = {
     const action = 'TextToImageLite'
     const version = '2023-09-01'
 
+    const resolution = hunyuanResolveNative(input.size)
+
     const body = JSON.stringify({
       Prompt: input.prompt,
-      Resolution: input.size ?? '1024:1024',
+      Resolution: resolution,
       Num: input.n ?? 1,
       ...(input.seed != null && { Seed: input.seed }),
       RspImgType: 'url',

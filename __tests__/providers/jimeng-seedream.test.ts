@@ -58,7 +58,8 @@ describe('jimengSeedreamProvider', () => {
     expect(body.model).toBe('jimeng-high-aes-general-v21-L')
     expect(body.prompt).toBe('a river')
     expect(body.n).toBe(1)
-    expect(body.size).toBe('1024x1024')
+    // Default size is now 2048x2048 (aspect=1:1, tier=hd) — Seedream pixel minimum requirement
+    expect(body.size).toBe('2048x2048')
   })
 
   it('uses different default model from doubao-seedream', async () => {

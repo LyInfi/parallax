@@ -9,10 +9,29 @@
 // Default model: gemini-3.1-flash-image-preview (Nano Banana 2)
 // Override via input.providerOverrides.model
 
-import type { ProviderAdapter, GenerateEvent, GenerateInput } from './types'
+import type { ProviderAdapter, GenerateEvent, GenerateInput, SizeSpec } from './types'
+import { expectedDimensions } from './types'
 
 const DEFAULT_MODEL = 'gemini-3.1-flash-image-preview'
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
+
+// Gemini supports these aspectRatio values in generationConfig.imageConfig.aspectRatio
+const GEMINI_VALID_ASPECTS = new Set(['1:1', '3:4', '4:3', '9:16', '16:9'])
+
+export function googleResolveNative(spec: SizeSpec | undefined): string {
+  // Gemini only uses aspectRatio; tier is ignored. Return the aspect string for display.
+  if (typeof spec === 'string') {
+    // Try to infer aspect from legacy WxH string
+    const m = spec.match(/^(\d+)[x*:×](\d+)$/i)
+    if (m) {
+      const { spec: s } = expectedDimensions(spec, '1:1', 'hd')
+      return s.aspect
+    }
+    return '1:1'
+  }
+  const s = spec ?? { aspect: '1:1' as const, tier: 'hd' as const }
+  return s.aspect
+}
 
 function buildParts(input: GenerateInput): unknown[] {
   const parts: unknown[] = [{ text: input.prompt }]
@@ -35,15 +54,10 @@ function buildParts(input: GenerateInput): unknown[] {
   return parts
 }
 
-// Map size string like "1024x1024" to imageConfig fields
-function parseSize(size?: string): { aspectRatio?: string } {
-  if (!size) return {}
-  const [w, h] = size.split('x').map(Number)
-  if (!w || !h) return {}
-
-  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
-  const d = gcd(w, h)
-  return { aspectRatio: `${w / d}:${h / d}` }
+// Resolve aspect ratio string for the Gemini API from a SizeSpec.
+function resolveAspectRatio(spec: SizeSpec | undefined): string | undefined {
+  const aspect = googleResolveNative(spec)
+  return GEMINI_VALID_ASPECTS.has(aspect) ? aspect : undefined
 }
 
 export const googleNanoBanana2Provider: ProviderAdapter = {
@@ -74,7 +88,7 @@ export const googleNanoBanana2Provider: ProviderAdapter = {
 
     const url = `${BASE_URL}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
 
-    const { aspectRatio } = parseSize(input.size)
+    const aspectRatio = resolveAspectRatio(input.size)
 
     const requestBody: Record<string, unknown> = {
       contents: [{ parts: buildParts(input) }],
