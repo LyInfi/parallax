@@ -77,7 +77,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     run: ({ sessionId, prompt, attachments, size, n, seed, parentAssetId }) => {
       const creds = getCreds(providerId)
       if (!creds || Object.keys(creds).length === 0) {
-        toast.error(`Missing API key for ${providerName}. Open Settings.`)
+        toast.error(`${providerName} 未填 API Key，请到设置页填入`)
         return
       }
       // For single-field (just apiKey), send raw string for back-compat with existing adapters

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useModelStore } from '@/lib/store/useModelStore'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
+import { Plus } from 'lucide-react'
 
 bootstrapProviders()
 
@@ -16,7 +17,7 @@ export function AddModelButton() {
     <ModelPicker
       providers={providers}
       onSelect={addCard}
-      trigger={<Button size="sm" variant="outline">+ 添加模型</Button>}
+      trigger={<Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />添加模型</Button>}
     />
   )
 }

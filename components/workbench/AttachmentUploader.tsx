@@ -3,6 +3,7 @@ import { useRef, useEffect, useState } from 'react'
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { Button } from '@/components/ui/button'
 import { ImagePlus, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 const MAX_SIZE = 10 * 1024 * 1024
 
@@ -14,7 +15,7 @@ export function AttachmentTrigger() {
     if (!files) return
     const valid: File[] = []
     for (const f of Array.from(files)) {
-      if (f.size > MAX_SIZE) { alert(`${f.name} 超过 10MB`); continue }
+      if (f.size > MAX_SIZE) { toast.error(`${f.name} 超过 10MB`); continue }
       valid.push(f)
     }
     setAttachments([...attachments, ...valid])

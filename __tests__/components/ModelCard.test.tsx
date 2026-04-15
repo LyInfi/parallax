@@ -15,7 +15,7 @@ describe('ModelCard', () => {
       onRetry={() => {}}
     />)
     expect(screen.getByText('oops')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /重试|retry/i })).toBeInTheDocument()
   })
   it('renders image when done', () => {
     render(<ModelCard card={{ cardId: 'c1', providerId: 'mock', status: 'done', images: [{ url: 'data:x' }] }} providerName="Mock" />)

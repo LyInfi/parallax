@@ -7,6 +7,7 @@ import {
 } from '@/lib/storage/gallery'
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 
@@ -43,14 +44,16 @@ function Lightbox({
             {asset.meta.favorited ? '取消收藏' : '收藏'}
           </Button>
           <Button size="sm" variant="outline" onClick={onDownload}>下载</Button>
-          <Button
+          <ConfirmButton
             size="sm"
-            variant="outline"
-            className="text-destructive hover:text-destructive"
-            onClick={() => { if (confirm('删除这张图？此操作不可撤销。')) onDelete() }}
+            variant="destructive"
+            title="删除图片"
+            description="此操作不可撤销。"
+            confirmLabel="删除"
+            onConfirm={onDelete}
           >
             删除
-          </Button>
+          </ConfirmButton>
         </div>
       </DialogContent>
     </Dialog>
@@ -85,14 +88,16 @@ function AssetCard({
         <Button size="sm" variant="outline" onClick={onToggleFav}>
           {a.meta.favorited ? '取消收藏' : '收藏'}
         </Button>
-        <Button
+        <ConfirmButton
           size="sm"
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          onClick={() => { if (confirm('删除这张图？')) onDelete() }}
+          variant="destructive"
+          title="删除图片"
+          description="此操作不可撤销。"
+          confirmLabel="删除"
+          onConfirm={onDelete}
         >
           删除
-        </Button>
+        </ConfirmButton>
       </div>
     </div>
   )
@@ -228,18 +233,19 @@ function SessionsView() {
                 <Button size="sm" variant="outline" onClick={() => reloadPrompt(s)}>
                   重新载入提示词
                 </Button>
-                <Button
+                <ConfirmButton
                   size="sm"
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  onClick={async () => {
-                    if (!confirm('删除整个会话（包括该会话生成的所有图片）？此操作不可撤销。')) return
+                  variant="destructive"
+                  title="删除会话"
+                  description="整个会话及其所有图片会被删除，无法撤销。"
+                  confirmLabel="删除"
+                  onConfirm={async () => {
                     await deleteSession(s.id)
                     load()
                   }}
                 >
                   删除
-                </Button>
+                </ConfirmButton>
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">

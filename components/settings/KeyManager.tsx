@@ -84,7 +84,7 @@ export function KeyManager() {
                 setCreds(p.id, values[p.id] ?? {})
                 setConfig(p.id, configs[p.id] ?? {})
               }}>
-                Save {p.displayName}
+                保存 {p.displayName}
               </Button>
               <Button variant="outline" onClick={() => {
                 deleteKey(p.id)
@@ -92,7 +92,7 @@ export function KeyManager() {
                 keyFields.forEach(f => { emptyK[f] = '' })
                 setValues(v => ({ ...v, [p.id]: emptyK }))
               }}>
-                Clear
+                清除
               </Button>
             </div>
           </div>
