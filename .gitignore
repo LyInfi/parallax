@@ -12,6 +12,14 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+
+# internal docs (design/plan drafts — not for public repo)
+/docs/superpowers
+
+# stray
+.gitignore.tmp
 
 # next.js
 /.next/
