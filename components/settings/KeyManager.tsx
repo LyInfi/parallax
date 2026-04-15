@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
-import { setCreds, getCreds, deleteKey } from '@/lib/storage/keys'
-import { getKeyFields } from '@/lib/providers/types'
+import { setCreds, getCreds, deleteKey, setConfig, getConfig } from '@/lib/storage/keys'
+import { getKeyFields, getConfigFields } from '@/lib/providers/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -12,62 +12,89 @@ bootstrapProviders()
 
 function fieldLabel(field: string): string {
   if (field === 'apiKey') return 'API Key'
-  // capitalize first letter
   return field.charAt(0).toUpperCase() + field.slice(1)
 }
 
 export function KeyManager() {
   const providers = listProviders()
-  // values: { [providerId]: { [field]: string } }
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
+  const [configs, setConfigs] = useState<Record<string, Record<string, string>>>({})
 
   useEffect(() => {
-    const init: Record<string, Record<string, string>> = {}
+    const initV: Record<string, Record<string, string>> = {}
+    const initC: Record<string, Record<string, string>> = {}
     providers.forEach(p => {
       const creds = getCreds(p.id)
       const fields = getKeyFields(p)
       const entry: Record<string, string> = {}
       fields.forEach(f => { entry[f] = creds?.[f] ?? '' })
-      init[p.id] = entry
+      initV[p.id] = entry
+
+      const cfg = getConfig(p.id)
+      const cfgEntry: Record<string, string> = {}
+      getConfigFields(p).forEach(f => { cfgEntry[f.id] = cfg[f.id] ?? f.default ?? '' })
+      initC[p.id] = cfgEntry
     })
-    setValues(init)
+    setValues(initV)
+    setConfigs(initC)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
     <div className="space-y-4">
       {providers.map(p => {
-        const fields = getKeyFields(p)
+        const keyFields = getKeyFields(p)
+        const cfgFields = getConfigFields(p)
         return (
-          <div key={p.id} className="flex items-end gap-2 border p-3 rounded">
-            <div className="flex-1 space-y-2">
-              <p className="font-medium text-sm">{p.displayName}</p>
-              {fields.map(field => (
-                <div key={field}>
-                  <Label htmlFor={`key-${p.id}-${field}`}>{fieldLabel(field)}</Label>
-                  <Input
-                    id={`key-${p.id}-${field}`}
-                    type="password"
-                    value={values[p.id]?.[field] ?? ''}
-                    onChange={(e) => setValues(v => ({
-                      ...v,
-                      [p.id]: { ...(v[p.id] ?? {}), [field]: e.target.value },
-                    }))}
-                  />
-                </div>
-              ))}
+          <div key={p.id} className="border p-3 rounded space-y-3">
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-2">
+                <p className="font-medium text-sm">{p.displayName}</p>
+                {keyFields.map(field => (
+                  <div key={field}>
+                    <Label htmlFor={`key-${p.id}-${field}`}>{fieldLabel(field)}</Label>
+                    <Input
+                      id={`key-${p.id}-${field}`}
+                      type="password"
+                      value={values[p.id]?.[field] ?? ''}
+                      onChange={(e) => setValues(v => ({
+                        ...v,
+                        [p.id]: { ...(v[p.id] ?? {}), [field]: e.target.value },
+                      }))}
+                    />
+                  </div>
+                ))}
+                {cfgFields.map(field => (
+                  <div key={field.id}>
+                    <Label htmlFor={`cfg-${p.id}-${field.id}`}>{field.label}</Label>
+                    <Input
+                      id={`cfg-${p.id}-${field.id}`}
+                      type="text"
+                      placeholder={field.placeholder}
+                      value={configs[p.id]?.[field.id] ?? ''}
+                      onChange={(e) => setConfigs(c => ({
+                        ...c,
+                        [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
+                      }))}
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button onClick={() => {
+                setCreds(p.id, values[p.id] ?? {})
+                setConfig(p.id, configs[p.id] ?? {})
+              }}>
+                Save {p.displayName}
+              </Button>
+              <Button variant="outline" onClick={() => {
+                deleteKey(p.id)
+                const emptyK: Record<string, string> = {}
+                keyFields.forEach(f => { emptyK[f] = '' })
+                setValues(v => ({ ...v, [p.id]: emptyK }))
+              }}>
+                Clear
+              </Button>
             </div>
-            <Button onClick={() => setCreds(p.id, values[p.id] ?? {})}>
-              Save {p.displayName}
-            </Button>
-            <Button variant="outline" onClick={() => {
-              deleteKey(p.id)
-              const empty: Record<string, string> = {}
-              fields.forEach(f => { empty[f] = '' })
-              setValues(v => ({ ...v, [p.id]: empty }))
-            }}>
-              Clear
-            </Button>
           </div>
         )
       })}

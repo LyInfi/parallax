@@ -2,7 +2,7 @@
 import { useImperativeHandle, forwardRef, useState } from 'react'
 import { ModelCard } from './ModelCard'
 import { useGenerate } from '@/lib/hooks/useGenerate'
-import { getCreds } from '@/lib/storage/keys'
+import { getCreds, getConfig } from '@/lib/storage/keys'
 import { putAsset } from '@/lib/storage/gallery'
 import { toast } from 'sonner'
 
@@ -36,8 +36,18 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
       const keyPayload = Object.keys(creds).length === 1 && 'apiKey' in creds
         ? creds.apiKey
         : JSON.stringify(creds)
+      const cfg = getConfig(providerId)
+      const providerOverrides = Object.fromEntries(
+        Object.entries(cfg).filter(([, v]) => v && v.trim() !== ''),
+      )
       setLastCtx({ prompt, params: { size, n, seed }, parentAssetId })
-      gen.start({ providerId, apiKey: keyPayload, input: { prompt, referenceImages: attachments, size, n, seed } })
+      gen.start({
+        providerId, apiKey: keyPayload,
+        input: {
+          prompt, referenceImages: attachments, size, n, seed,
+          ...(Object.keys(providerOverrides).length > 0 && { providerOverrides }),
+        },
+      })
     },
     cancel: () => gen.cancel(),
   }), [gen, providerId, providerName])

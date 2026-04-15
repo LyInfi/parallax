@@ -1,16 +1,29 @@
 import { z } from 'zod'
 
+export const ConfigFieldSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  placeholder: z.string().optional(),
+  default: z.string().optional(),
+})
+export type ConfigField = z.infer<typeof ConfigFieldSchema>
+
 export const CapabilitiesSchema = z.object({
   textToImage: z.boolean(),
   imageToImage: z.boolean(),
   maxImages: z.number().int().positive(),
   sizes: z.array(z.string()).min(1),
   keyFields: z.array(z.string()).optional(), // default ['apiKey']
+  configFields: z.array(ConfigFieldSchema).optional(), // maps to providerOverrides
 })
 export type Capabilities = z.infer<typeof CapabilitiesSchema>
 
 export function getKeyFields(p: { capabilities: Capabilities }): string[] {
   return p.capabilities.keyFields ?? ['apiKey']
+}
+
+export function getConfigFields(p: { capabilities: Capabilities }): ConfigField[] {
+  return p.capabilities.configFields ?? []
 }
 
 export const GenerateInputSchema = z.object({

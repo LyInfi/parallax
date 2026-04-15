@@ -38,6 +38,14 @@ export const openrouterProvider: ProviderAdapter = {
     imageToImage: true,
     maxImages: 1,
     sizes: ['1024x1024', '512x512', '1792x1024', '1024x1792'],
+    configFields: [
+      {
+        id: 'model',
+        label: '模型 ID（OpenRouter model slug）',
+        placeholder: 'google/gemini-2.5-flash-image',
+        default: 'google/gemini-2.5-flash-image',
+      },
+    ],
   },
 
   async *generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent> {

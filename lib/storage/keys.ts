@@ -1,4 +1,20 @@
 const PREFIX = 'apikey:'
+const CONFIG_PREFIX = 'cfg:'
+
+export function setConfig(providerId: string, fields: Record<string, string>): void {
+  localStorage.setItem(CONFIG_PREFIX + providerId, JSON.stringify(fields))
+}
+
+export function getConfig(providerId: string): Record<string, string> {
+  const raw = localStorage.getItem(CONFIG_PREFIX + providerId)
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, string>
+  } catch {}
+  return {}
+}
+
 export function setKey(providerId: string, key: string): void { localStorage.setItem(PREFIX + providerId, key) }
 export function getKey(providerId: string): string | null { return localStorage.getItem(PREFIX + providerId) }
 export function deleteKey(providerId: string): void { localStorage.removeItem(PREFIX + providerId) }
