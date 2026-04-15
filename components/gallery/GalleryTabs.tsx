@@ -163,14 +163,18 @@ function SessionsView() {
       <div className="space-y-4">
         {sessions.map(s => (
           <div key={s.id} className="border rounded p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-sm font-medium truncate">{s.prompt || '(无提示词)'}</div>
-                <div className="text-xs text-muted-foreground">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium break-words line-clamp-2" title={s.prompt}>
+                  {s.prompt || '(无提示词)'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
                   {new Date(s.createdAt).toLocaleString()} · {s.providerIds.join(', ')}
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={() => reloadPrompt(s)}>重新载入提示词</Button>
+              <Button size="sm" variant="outline" className="shrink-0" onClick={() => reloadPrompt(s)}>
+                重新载入提示词
+              </Button>
             </div>
             <div className="flex gap-2 flex-wrap">
               {(sessionAssets[s.id] ?? []).map(a => (
