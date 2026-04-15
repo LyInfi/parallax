@@ -110,10 +110,10 @@ export const googleNanoBanana2Provider: ProviderAdapter = {
 
       let imageIndex = 0
       for (const candidate of candidates) {
-        const parts: unknown[] = Array.isArray(
-          (candidate as Record<string, unknown>)?.content?.parts
-        )
-          ? ((candidate as Record<string, unknown>).content as Record<string, unknown>).parts as unknown[]
+        const candidateRecord = candidate as Record<string, unknown>
+        const content = candidateRecord?.content as Record<string, unknown> | undefined
+        const parts: unknown[] = Array.isArray(content?.parts)
+          ? (content.parts as unknown[])
           : []
 
         for (const part of parts) {

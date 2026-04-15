@@ -15,7 +15,7 @@ export function getKeyFields(p: { capabilities: Capabilities }): string[] {
 
 export const GenerateInputSchema = z.object({
   prompt: z.string().min(1),
-  referenceImages: z.array(z.instanceof(Blob)).optional(),
+  referenceImages: z.array(z.union([z.string(), z.instanceof(Blob)])).optional(),
   size: z.string().optional(),
   n: z.number().int().positive().max(8).optional(),
   seed: z.number().int().optional(),
