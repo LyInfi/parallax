@@ -23,8 +23,25 @@ export function openrouterResolveNative(spec: SizeSpec | undefined): string {
   return `${w}x${h}`
 }
 
+// OpenRouter /chat/completions has no standard aspect-ratio parameter. Inject an aspect
+// hint into the prompt text so upstream image models (Gemini, Flux, etc.) honor it.
+function aspectHint(spec: GenerateInput['size']): string {
+  if (!spec) return ''
+  if (typeof spec === 'string') return ''
+  const map: Record<string, string> = {
+    '1:1':  'Aspect ratio 1:1 (square).',
+    '16:9': 'Aspect ratio 16:9 (wide landscape).',
+    '9:16': 'Aspect ratio 9:16 (tall portrait).',
+    '4:3':  'Aspect ratio 4:3 (landscape).',
+    '3:4':  'Aspect ratio 3:4 (portrait).',
+  }
+  return map[spec.aspect] ?? ''
+}
+
 function buildMessages(input: GenerateInput) {
-  const content: unknown[] = [{ type: 'text', text: input.prompt }]
+  const hint = aspectHint(input.size)
+  const text = hint ? `${input.prompt}\n\n${hint}` : input.prompt
+  const content: unknown[] = [{ type: 'text', text }]
 
   // Handle referenceImages: may be base64 data URL strings (runtime path) or Blobs (type path)
   if (input.referenceImages && input.referenceImages.length > 0) {
@@ -33,7 +50,6 @@ function buildMessages(input: GenerateInput) {
         content.push({ type: 'image_url', image_url: { url: img } })
       }
       // Blob handling: skip in this adapter — OpenRouter expects URLs not raw Blobs
-      // TODO: if Blob support is needed, convert via FileReader or Buffer.from
     }
   }
 
