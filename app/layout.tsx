@@ -14,7 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-export const metadata = { title: 'Image Bench', description: 'Multi-model image generation bench' }
+export const metadata = {
+  title: 'Parallax',
+  description: 'Multi-model image generation workbench — compare side-by-side.',
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

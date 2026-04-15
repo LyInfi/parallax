@@ -1,7 +1,9 @@
 {
-  "name": "image-bench",
+  "name": "parallax",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "description": "A browser-based, BYOK multi-model image generation workbench — compare results from multiple AI models side-by-side.",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
