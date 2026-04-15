@@ -6,12 +6,55 @@ import {
 } from '@/lib/storage/gallery'
 import { usePromptStore } from '@/lib/store/usePromptStore'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 
-function AssetCard({ a, urls, onToggleFav }: { a: Asset; urls: Record<string, string>; onToggleFav: () => void }) {
+function Lightbox({
+  asset, url, open, onOpenChange, onToggleFav, onDownload,
+}: {
+  asset: Asset | null
+  url: string | null
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  onToggleFav: () => void
+  onDownload: () => void
+}) {
+  if (!asset || !url) return null
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[90vw] sm:max-w-[90vw] max-h-[90vh] flex flex-col gap-2 p-3">
+        <DialogTitle className="sr-only">大图预览</DialogTitle>
+        <div className="flex-1 overflow-auto flex items-center justify-center bg-muted rounded">
+          <img src={url} alt={asset.meta.prompt} className="max-w-full max-h-[75vh] object-contain" />
+        </div>
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium">{asset.meta.prompt || '(无提示词)'}</div>
+            <div className="text-xs text-muted-foreground">
+              {asset.providerId} · {new Date(asset.meta.createdAt).toLocaleString()}
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={onToggleFav}>
+            {asset.meta.favorited ? '取消收藏' : '收藏'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDownload}>下载</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function AssetCard({ a, urls, onOpen, onToggleFav }: { a: Asset; urls: Record<string, string>; onOpen: () => void; onToggleFav: () => void }) {
   return (
     <div className="border rounded p-2 space-y-1">
-      <img src={urls[a.id]} alt={a.meta.prompt} className="w-full rounded" />
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`预览 ${a.meta.prompt}`}
+        className="block w-full cursor-zoom-in"
+      >
+        <img src={urls[a.id]} alt={a.meta.prompt} className="w-full rounded hover:opacity-90 transition" />
+      </button>
       <div className="text-xs truncate">{a.meta.prompt}</div>
       <div className="text-xs text-muted-foreground">{a.providerId}</div>
       <Button size="sm" variant="outline" onClick={onToggleFav}>
@@ -21,9 +64,19 @@ function AssetCard({ a, urls, onToggleFav }: { a: Asset; urls: Record<string, st
   )
 }
 
+function downloadAsset(asset: Asset) {
+  const url = URL.createObjectURL(asset.blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${asset.providerId}-${asset.id}.png`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
   const [items, setItems] = useState<Asset[]>([])
   const [urls, setUrls] = useState<Record<string, string>>({})
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const reload = async () => {
     const list = favoritesOnly ? await listFavoriteAssets() : await listAssets()
@@ -36,18 +89,35 @@ function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { reload() }, [favoritesOnly])
 
+  const openAsset = items.find(a => a.id === openId) ?? null
+
   if (items.length === 0) return <p className="text-muted-foreground">暂无图片</p>
   return (
-    <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-      {items.map(a => (
-        <AssetCard
-          key={a.id}
-          a={a}
-          urls={urls}
-          onToggleFav={async () => { await setFavorite(a.id, !a.meta.favorited); reload() }}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+        {items.map(a => (
+          <AssetCard
+            key={a.id}
+            a={a}
+            urls={urls}
+            onOpen={() => setOpenId(a.id)}
+            onToggleFav={async () => { await setFavorite(a.id, !a.meta.favorited); reload() }}
+          />
+        ))}
+      </div>
+      <Lightbox
+        asset={openAsset}
+        url={openAsset ? urls[openAsset.id] : null}
+        open={openId !== null}
+        onOpenChange={(v) => { if (!v) setOpenId(null) }}
+        onToggleFav={async () => {
+          if (!openAsset) return
+          await setFavorite(openAsset.id, !openAsset.meta.favorited)
+          reload()
+        }}
+        onDownload={() => openAsset && downloadAsset(openAsset)}
+      />
+    </>
   )
 }
 
@@ -55,23 +125,24 @@ function SessionsView() {
   const [sessions, setSessions] = useState<GallerySession[]>([])
   const [sessionAssets, setSessionAssets] = useState<Record<string, Asset[]>>({})
   const [urls, setUrls] = useState<Record<string, string>>({})
+  const [openId, setOpenId] = useState<string | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    ;(async () => {
-      const ss = await listSessions()
-      setSessions(ss)
-      const map: Record<string, Asset[]> = {}
-      const urlMap: Record<string, string> = {}
-      for (const s of ss) {
-        const as = await assetsOfSession(s.id)
-        map[s.id] = as
-        for (const a of as) urlMap[a.id] = URL.createObjectURL(a.thumbBlob)
-      }
-      setSessionAssets(map)
-      setUrls(prev => { Object.values(prev).forEach(URL.revokeObjectURL); return urlMap })
-    })()
-  }, [])
+  const load = async () => {
+    const ss = await listSessions()
+    setSessions(ss)
+    const map: Record<string, Asset[]> = {}
+    const urlMap: Record<string, string> = {}
+    for (const s of ss) {
+      const as = await assetsOfSession(s.id)
+      map[s.id] = as
+      for (const a of as) urlMap[a.id] = URL.createObjectURL(a.thumbBlob)
+    }
+    setSessionAssets(map)
+    setUrls(prev => { Object.values(prev).forEach(URL.revokeObjectURL); return urlMap })
+  }
+
+  useEffect(() => { load() }, [])
 
   const reloadPrompt = (s: GallerySession) => {
     usePromptStore.getState().setPrompt(s.prompt)
@@ -83,28 +154,53 @@ function SessionsView() {
     router.push('/')
   }
 
+  const allAssets = Object.values(sessionAssets).flat()
+  const openAsset = allAssets.find(a => a.id === openId) ?? null
+
   if (sessions.length === 0) return <p className="text-muted-foreground">暂无生成记录</p>
   return (
-    <div className="space-y-4">
-      {sessions.map(s => (
-        <div key={s.id} className="border rounded p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-sm font-medium truncate">{s.prompt || '(无提示词)'}</div>
-              <div className="text-xs text-muted-foreground">
-                {new Date(s.createdAt).toLocaleString()} · {s.providerIds.join(', ')}
+    <>
+      <div className="space-y-4">
+        {sessions.map(s => (
+          <div key={s.id} className="border rounded p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-medium truncate">{s.prompt || '(无提示词)'}</div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(s.createdAt).toLocaleString()} · {s.providerIds.join(', ')}
+                </div>
               </div>
+              <Button size="sm" variant="outline" onClick={() => reloadPrompt(s)}>重新载入提示词</Button>
             </div>
-            <Button size="sm" variant="outline" onClick={() => reloadPrompt(s)}>重新载入提示词</Button>
+            <div className="flex gap-2 flex-wrap">
+              {(sessionAssets[s.id] ?? []).map(a => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setOpenId(a.id)}
+                  aria-label={`预览 ${a.meta.prompt}`}
+                  className="cursor-zoom-in"
+                >
+                  <img src={urls[a.id]} alt={s.prompt} className="h-24 rounded object-cover hover:opacity-90 transition" />
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {(sessionAssets[s.id] ?? []).map(a => (
-              <img key={a.id} src={urls[a.id]} alt={s.prompt} className="h-24 rounded object-cover" />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      <Lightbox
+        asset={openAsset}
+        url={openAsset ? urls[openAsset.id] : null}
+        open={openId !== null}
+        onOpenChange={(v) => { if (!v) setOpenId(null) }}
+        onToggleFav={async () => {
+          if (!openAsset) return
+          await setFavorite(openAsset.id, !openAsset.meta.favorited)
+          load()
+        }}
+        onDownload={() => openAsset && downloadAsset(openAsset)}
+      />
+    </>
   )
 }
 
