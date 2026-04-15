@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import {
   listAssets, listFavoriteAssets, listSessions, assetsOfSession, setFavorite,
+  deleteAsset, deleteSession,
   type Asset, type GallerySession,
 } from '@/lib/storage/gallery'
 import { usePromptStore } from '@/lib/store/usePromptStore'
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 
 function Lightbox({
-  asset, url, open, onOpenChange, onToggleFav, onDownload,
+  asset, url, open, onOpenChange, onToggleFav, onDownload, onDelete,
 }: {
   asset: Asset | null
   url: string | null
@@ -18,6 +19,7 @@ function Lightbox({
   onOpenChange: (v: boolean) => void
   onToggleFav: () => void
   onDownload: () => void
+  onDelete: () => void
 }) {
   if (!asset || !url) return null
   return (
@@ -41,13 +43,29 @@ function Lightbox({
             {asset.meta.favorited ? '取消收藏' : '收藏'}
           </Button>
           <Button size="sm" variant="outline" onClick={onDownload}>下载</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={() => { if (confirm('删除这张图？此操作不可撤销。')) onDelete() }}
+          >
+            删除
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
 
-function AssetCard({ a, urls, onOpen, onToggleFav }: { a: Asset; urls: Record<string, string>; onOpen: () => void; onToggleFav: () => void }) {
+function AssetCard({
+  a, urls, onOpen, onToggleFav, onDelete,
+}: {
+  a: Asset
+  urls: Record<string, string>
+  onOpen: () => void
+  onToggleFav: () => void
+  onDelete: () => void
+}) {
   return (
     <div className="border rounded p-2 space-y-1">
       <button
@@ -63,9 +81,19 @@ function AssetCard({ a, urls, onOpen, onToggleFav }: { a: Asset; urls: Record<st
         {a.providerId}
         {a.meta.model && <> · <span className="font-mono">{a.meta.model}</span></>}
       </div>
-      <Button size="sm" variant="outline" onClick={onToggleFav}>
-        {a.meta.favorited ? '取消收藏' : '收藏'}
-      </Button>
+      <div className="flex gap-1">
+        <Button size="sm" variant="outline" onClick={onToggleFav}>
+          {a.meta.favorited ? '取消收藏' : '收藏'}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-destructive hover:text-destructive"
+          onClick={() => { if (confirm('删除这张图？')) onDelete() }}
+        >
+          删除
+        </Button>
+      </div>
     </div>
   )
 }
@@ -108,6 +136,7 @@ function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
             urls={urls}
             onOpen={() => setOpenId(a.id)}
             onToggleFav={async () => { await setFavorite(a.id, !a.meta.favorited); reload() }}
+            onDelete={async () => { await deleteAsset(a.id); reload() }}
           />
         ))}
       </div>
@@ -122,6 +151,12 @@ function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
           reload()
         }}
         onDownload={() => openAsset && downloadAsset(openAsset)}
+        onDelete={async () => {
+          if (!openAsset) return
+          await deleteAsset(openAsset.id)
+          setOpenId(null)
+          reload()
+        }}
       />
     </>
   )
@@ -189,9 +224,23 @@ function SessionsView() {
                   })}
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="shrink-0" onClick={() => reloadPrompt(s)}>
-                重新载入提示词
-              </Button>
+              <div className="flex gap-1 shrink-0">
+                <Button size="sm" variant="outline" onClick={() => reloadPrompt(s)}>
+                  重新载入提示词
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={async () => {
+                    if (!confirm('删除整个会话（包括该会话生成的所有图片）？此操作不可撤销。')) return
+                    await deleteSession(s.id)
+                    load()
+                  }}
+                >
+                  删除
+                </Button>
+              </div>
             </div>
             <div className="flex gap-2 flex-wrap">
               {(sessionAssets[s.id] ?? []).map(a => (
@@ -220,6 +269,12 @@ function SessionsView() {
           load()
         }}
         onDownload={() => openAsset && downloadAsset(openAsset)}
+        onDelete={async () => {
+          if (!openAsset) return
+          await deleteAsset(openAsset.id)
+          setOpenId(null)
+          load()
+        }}
       />
     </>
   )

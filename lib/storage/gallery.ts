@@ -58,6 +58,18 @@ export async function listFavoriteAssets() {
   const all = await galleryDb.assets.orderBy('meta.createdAt').reverse().toArray()
   return all.filter(a => a.meta.favorited)
 }
+export async function deleteAsset(id: string) {
+  await galleryDb.assets.delete(id)
+}
+
+/** Delete a session row and all of its assets. */
+export async function deleteSession(sessionId: string) {
+  await galleryDb.transaction('rw', galleryDb.assets, galleryDb.sessions, async () => {
+    await galleryDb.assets.where('sessionId').equals(sessionId).delete()
+    await galleryDb.sessions.delete(sessionId)
+  })
+}
+
 export async function setFavorite(id: string, favorited: boolean) {
   const a = await galleryDb.assets.get(id); if (!a) return
   a.meta.favorited = favorited
