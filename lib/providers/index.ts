@@ -4,6 +4,7 @@ import { openrouterProvider } from './openrouter'
 import { googleNanoBanana2Provider } from './google-nano-banana-2'
 import { doubaoSeedreamProvider } from './doubao-seedream'
 import { jimengSeedreamProvider } from './jimeng-seedream'
+import { wanxiangProvider } from './wanxiang'
 
 let bootstrapped = false
 export function bootstrapProviders(): void {
@@ -14,5 +15,6 @@ export function bootstrapProviders(): void {
   registerProvider(googleNanoBanana2Provider)
   registerProvider(doubaoSeedreamProvider)
   registerProvider(jimengSeedreamProvider)
+  registerProvider(wanxiangProvider)
   bootstrapped = true
 }
