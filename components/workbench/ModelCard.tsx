@@ -33,7 +33,11 @@ export function ModelCard({ card, providerName, onRetry, onFavorite, onDownload,
         <div className="space-y-2">
           {card.images.map((img, i) => (
             <div key={i} className="space-y-1">
-              <img src={img.url} alt={`${providerName}-${i}`} className="w-full rounded" />
+              <img
+                src={img.url}
+                alt={`${providerName}-${i}`}
+                className="w-full h-auto max-h-[70vh] object-contain rounded bg-muted"
+              />
               <div className="flex gap-1">
                 {onFavorite && <Button size="sm" variant="secondary" onClick={() => onFavorite(img.url)}>❤</Button>}
                 {onDownload && <Button size="sm" variant="secondary" onClick={() => onDownload(img.url)}>⬇</Button>}
