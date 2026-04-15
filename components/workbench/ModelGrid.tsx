@@ -35,10 +35,14 @@ export function ModelGrid() {
       const m = effectiveModel(c.providerId, byId.get(c.providerId)?.defaultModel)
       if (m) models[c.providerId] = m
     }
+    const sizeSpec = ps.params.aspect && ps.params.tier
+      ? { aspect: ps.params.aspect, tier: ps.params.tier }
+      : undefined
+
     await putSession({
       id: sessionId,
       prompt: ps.prompt,
-      params: { size: ps.params.size, n: ps.params.n, seed: ps.params.seed },
+      params: { aspect: ps.params.aspect, tier: ps.params.tier, n: ps.params.n, seed: ps.params.seed },
       providerIds: allCards.map(c => c.providerId),
       models,
       createdAt: Date.now(),
@@ -48,7 +52,7 @@ export function ModelGrid() {
         sessionId,
         prompt: ps.prompt,
         attachments: ps.attachments,
-        size: ps.params.size,
+        size: sizeSpec,
         n: ps.params.n,
         seed: ps.params.seed,
       })

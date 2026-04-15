@@ -3,6 +3,7 @@ import { useImperativeHandle, forwardRef, useState, useEffect, useRef } from 're
 import { ModelCard } from './ModelCard'
 import { useGenerate } from '@/lib/hooks/useGenerate'
 import { getCreds, getConfig } from '@/lib/storage/keys'
+import type { SizeSpec } from '@/lib/providers/types'
 import { putAsset, setFavorite, latestAssetsOfCard } from '@/lib/storage/gallery'
 import { fetchImageBlob } from '@/lib/image-fetch'
 import { toast } from 'sonner'
@@ -12,7 +13,7 @@ export type CardControllerHandle = {
     sessionId: string
     prompt: string
     attachments: Blob[]
-    size?: string
+    size?: SizeSpec
     n?: number
     seed?: number
     parentAssetId?: string
@@ -197,7 +198,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
           : JSON.stringify(retryCreds ?? {})
         gen.start({
           providerId, apiKey: retryKey,
-          input: { prompt: lastCtx.prompt, size: lastCtx.params.size as string | undefined, n: lastCtx.params.n as number | undefined, seed: lastCtx.params.seed as number | undefined },
+          input: { prompt: lastCtx.prompt, size: lastCtx.params.size as SizeSpec | undefined, n: lastCtx.params.n as number | undefined, seed: lastCtx.params.seed as number | undefined },
         })
       }}
       onFavorite={saveFavorite}

@@ -1,13 +1,14 @@
 'use client'
 import { useRef, useState } from 'react'
 import { streamSSE } from '@/lib/sse/client'
+import type { SizeSpec } from '@/lib/providers/types'
 
 type Status = 'idle' | 'queued' | 'running' | 'done' | 'error'
 
 export type StartParams = {
   providerId: string
   apiKey: string
-  input: { prompt: string; referenceImages?: Blob[]; size?: string; n?: number; seed?: number }
+  input: { prompt: string; referenceImages?: Blob[]; size?: SizeSpec; n?: number; seed?: number }
 }
 
 async function blobToBase64(b: Blob): Promise<string> {

@@ -5,7 +5,10 @@ import { useModelStore } from '@/lib/store/useModelStore'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { AttachmentTrigger, AttachmentThumbs } from './AttachmentUploader'
-import { SIZE_PRESETS, resolveSize } from '@/lib/providers/size-catalog'
+import { ASPECTS, TIERS } from '@/lib/providers/aspect'
+import type { Aspect, Tier } from '@/lib/providers/aspect'
+import { previewSize } from '@/lib/providers/size-preview'
+import type { SizeSpec } from '@/lib/providers/types'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
 
@@ -16,22 +19,24 @@ type Props = { onGenerate: () => void; busy?: boolean; onCancel?: () => void }
 export function PromptBar({ onGenerate, busy, onCancel }: Props) {
   const { prompt, setPrompt, params, setParams } = usePromptStore()
   const cards = useModelStore((s) => s.cards)
-  const [providers, setProviders] = useState<Array<{ id: string; displayName: string; capabilities: { sizes: string[] } }>>([])
+  const [providers, setProviders] = useState<Array<{ id: string; displayName: string }>>([])
   useEffect(() => { setProviders(listProviders()) }, [])
 
   const disabled = !prompt.trim() || !!busy
-  const selectedSize = params.size ?? '1024x1024'
+
+  const selectedAspect: Aspect = params.aspect ?? '1:1'
+  const selectedTier: Tier = params.tier ?? 'hd'
+  const sizeSpec: SizeSpec = { aspect: selectedAspect, tier: selectedTier }
 
   const providerById = new Map(providers.map(p => [p.id, p]))
   const activeProviderIds = Array.from(new Set(cards.map(c => c.providerId)))
-  const fallbacks = activeProviderIds
+  const previews = activeProviderIds
     .map(id => {
       const p = providerById.get(id)
       if (!p) return null
-      const resolved = resolveSize(selectedSize, p.capabilities.sizes)
-      return resolved !== selectedSize ? { name: p.displayName, resolved } : null
+      return { name: p.displayName, size: previewSize(id, sizeSpec) }
     })
-    .filter(Boolean) as Array<{ name: string; resolved: string }>
+    .filter(Boolean) as Array<{ name: string; size: string }>
 
   return (
     <div className="border-t p-3 space-y-2 bg-background">
@@ -47,15 +52,26 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
         />
       </div>
       <div className="flex gap-2 items-center flex-wrap">
-        <label className="text-sm text-muted-foreground">尺寸</label>
+        <label className="text-sm text-muted-foreground">宽高比</label>
         <select
-          aria-label="size"
-          value={selectedSize}
-          onChange={(e) => setParams({ size: e.target.value })}
+          aria-label="aspect"
+          value={selectedAspect}
+          onChange={(e) => setParams({ aspect: e.target.value as Aspect })}
           className="border rounded px-2 py-1 text-sm"
         >
-          {SIZE_PRESETS.map(p => (
-            <option key={p.id} value={p.id}>{p.label}</option>
+          {ASPECTS.map(a => (
+            <option key={a.id} value={a.id}>{a.label}</option>
+          ))}
+        </select>
+        <label className="text-sm text-muted-foreground ml-2">质量</label>
+        <select
+          aria-label="tier"
+          value={selectedTier}
+          onChange={(e) => setParams({ tier: e.target.value as Tier })}
+          className="border rounded px-2 py-1 text-sm"
+        >
+          {TIERS.map(t => (
+            <option key={t.id} value={t.id}>{t.label}</option>
           ))}
         </select>
         <label className="text-sm text-muted-foreground ml-2">张数</label>
@@ -70,12 +86,12 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
         {busy && onCancel && <Button variant="outline" onClick={onCancel}>取消</Button>}
         <Button onClick={onGenerate} disabled={disabled}>生成</Button>
       </div>
-      {fallbacks.length > 0 && (
+      {previews.length > 0 && (
         <div className="text-xs text-muted-foreground">
-          ⚠ 不支持该尺寸的模型会映射到最近值：
-          {fallbacks.map((f, i) => (
+          预计输出尺寸：
+          {previews.map((f, i) => (
             <span key={i} className="ml-2">
-              {f.name} → <code>{f.resolved}</code>
+              {f.name} → <code>{f.size}</code>
             </span>
           ))}
         </div>
