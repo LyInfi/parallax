@@ -48,7 +48,7 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
-          className="flex-1"
+          className="flex-1 max-h-[30vh] overflow-auto resize-none"
         />
       </div>
       <div className="flex gap-2 items-center flex-wrap">
