@@ -23,7 +23,7 @@ export function GalleryGrid() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (items.length === 0) return <p className="text-muted-foreground">No saved images yet.</p>
+  if (items.length === 0) return <p className="text-muted-foreground">暂无保存的图片</p>
 
   return (
     <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
@@ -33,7 +33,7 @@ export function GalleryGrid() {
           <div className="text-xs truncate">{a.meta.prompt}</div>
           <div className="text-xs text-muted-foreground">{a.providerId}</div>
           <Button size="sm" variant="outline" onClick={async () => { await setFavorite(a.id, !a.meta.favorited); reload() }}>
-            {a.meta.favorited ? 'Unfavorite' : 'Favorite'}
+            {a.meta.favorited ? '取消收藏' : '收藏'}
           </Button>
         </div>
       ))}

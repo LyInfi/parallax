@@ -32,9 +32,9 @@ export function ModelCard({ card, providerName, modelName, onRetry, onRegenerate
           </Button>
         )}
       </div>
-      {card.status === 'idle' && <div className="text-sm text-muted-foreground">ready</div>}
-      {card.status === 'queued' && <div className="text-sm">queued…</div>}
-      {card.status === 'running' && <div className="text-sm">generating…</div>}
+      {card.status === 'idle' && <div className="text-sm text-muted-foreground">就绪</div>}
+      {card.status === 'queued' && <div className="text-sm">排队中…</div>}
+      {card.status === 'running' && <div className="text-sm">生成中…</div>}
       {card.status === 'error' && (
         <div className="text-sm text-destructive space-y-2">
           <div>{card.error?.message ?? 'error'}</div>

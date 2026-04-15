@@ -39,7 +39,7 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
       <div className="flex gap-2 items-start">
         <AttachmentTrigger />
         <Textarea
-          placeholder="Describe what you want to generate…"
+          placeholder="描述你想生成的内容…"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}

@@ -11,7 +11,7 @@ describe('PromptBar', () => {
   it('calls onGenerate with current prompt', async () => {
     const onGen = vi.fn()
     render(<PromptBar onGenerate={onGen} />)
-    await userEvent.type(screen.getByPlaceholderText(/describe/i), 'hello')
+    await userEvent.type(screen.getByPlaceholderText(/描述|describe/i), 'hello')
     await userEvent.click(screen.getByRole('button', { name: /生成|generate/i }))
     expect(onGen).toHaveBeenCalled()
   })

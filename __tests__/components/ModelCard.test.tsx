@@ -6,7 +6,7 @@ describe('ModelCard', () => {
   it('renders idle state', () => {
     render(<ModelCard card={{ cardId: 'c1', providerId: 'mock', status: 'idle', images: [] }} providerName="Mock" />)
     expect(screen.getByText('Mock')).toBeInTheDocument()
-    expect(screen.getByText(/ready/i)).toBeInTheDocument()
+    expect(screen.getByText(/就绪|ready/i)).toBeInTheDocument()
   })
   it('renders error with retry button', () => {
     render(<ModelCard
