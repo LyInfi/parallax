@@ -29,6 +29,14 @@ export const doubaoSeedreamProvider: ProviderAdapter = {
     imageToImage: false,
     maxImages: 4,
     sizes: ['1024x1024', '512x512', '768x1024', '1024x768', '1280x720', '720x1280'],
+    configFields: [
+      {
+        id: 'model',
+        label: '模型 ID',
+        placeholder: 'doubao-seedream-4-0-250828',
+        default: 'doubao-seedream-4-0-250828',
+      },
+    ],
   },
 
   async *generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent> {

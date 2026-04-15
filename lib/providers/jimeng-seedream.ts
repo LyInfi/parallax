@@ -32,6 +32,14 @@ export const jimengSeedreamProvider: ProviderAdapter = {
     imageToImage: false,
     maxImages: 4,
     sizes: ['1024x1024', '512x512', '768x1024', '1024x768', '1280x720', '720x1280'],
+    configFields: [
+      {
+        id: 'model',
+        label: '模型 ID',
+        placeholder: 'jimeng-high-aes-general-v21-L',
+        default: 'jimeng-high-aes-general-v21-L',
+      },
+    ],
   },
 
   async *generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent> {

@@ -83,6 +83,14 @@ export const hunyuanProvider: ProviderAdapter = {
     maxImages: 4,
     sizes: ['1024:1024', '768:1024', '1024:768', '768:768'],
     keyFields: ['SecretId', 'SecretKey'],
+    configFields: [
+      {
+        id: 'region',
+        label: '地域（ap-guangzhou / ap-beijing / ap-shanghai ...）',
+        placeholder: 'ap-guangzhou',
+        default: 'ap-guangzhou',
+      },
+    ],
   },
 
   async *generate(input, apiKey, signal): AsyncIterable<GenerateEvent> {

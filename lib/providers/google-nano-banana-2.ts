@@ -54,6 +54,14 @@ export const googleNanoBanana2Provider: ProviderAdapter = {
     imageToImage: true,
     maxImages: 1,
     sizes: ['1024x1024', '1024x1792', '1792x1024'],
+    configFields: [
+      {
+        id: 'model',
+        label: '模型 ID',
+        placeholder: 'gemini-3.1-flash-image-preview',
+        default: 'gemini-3.1-flash-image-preview',
+      },
+    ],
   },
 
   async *generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent> {

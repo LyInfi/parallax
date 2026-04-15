@@ -74,6 +74,14 @@ export const wanxiangProvider: ProviderAdapter = {
     maxImages: 4,
     // Preset sizes; custom WxH strings also accepted by the API
     sizes: ['1K', '2K', '4K'],
+    configFields: [
+      {
+        id: 'model',
+        label: '模型 ID（wan2.7-image-pro / wan2.7-image / wanx2.1-t2i-turbo ...）',
+        placeholder: 'wan2.7-image-pro',
+        default: 'wan2.7-image-pro',
+      },
+    ],
   },
 
   async *generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent> {
