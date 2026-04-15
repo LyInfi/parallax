@@ -31,7 +31,7 @@ export function ConfirmButton({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { void onConfirm() }}>
+            <AlertDialogAction onClick={() => { void onConfirm(); setOpen(false) }}>
               {confirmLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
