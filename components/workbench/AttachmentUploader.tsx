@@ -4,18 +4,20 @@ import { usePromptStore } from '@/lib/store/usePromptStore'
 import { Button } from '@/components/ui/button'
 import { ImagePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { useT, getT } from '@/lib/i18n/useT'
 
 const MAX_SIZE = 10 * 1024 * 1024
 
 export function AttachmentTrigger() {
   const { attachments, setAttachments } = usePromptStore()
   const inputRef = useRef<HTMLInputElement>(null)
+  const t = useT()
 
   const onFiles = (files: FileList | null) => {
     if (!files) return
     const valid: File[] = []
     for (const f of Array.from(files)) {
-      if (f.size > MAX_SIZE) { toast.error(`${f.name} 超过 10MB`); continue }
+      if (f.size > MAX_SIZE) { toast.error(getT()('attach.tooLarge', { name: f.name })); continue }
       valid.push(f)
     }
     setAttachments([...attachments, ...valid])
@@ -27,8 +29,8 @@ export function AttachmentTrigger() {
         type="button"
         variant="outline"
         size="icon"
-        aria-label="上传参考图"
-        title="上传参考图"
+        aria-label={t('attach.upload')}
+        title={t('attach.upload')}
         onClick={() => inputRef.current?.click()}
         className="h-10 w-10 shrink-0"
       >
@@ -49,6 +51,7 @@ export function AttachmentTrigger() {
 export function AttachmentThumbs() {
   const { attachments, setAttachments } = usePromptStore()
   const [urls, setUrls] = useState<string[]>([])
+  const t = useT()
 
   useEffect(() => {
     const next = attachments.map((f) => URL.createObjectURL(f))
@@ -64,7 +67,7 @@ export function AttachmentThumbs() {
           <img src={urls[i]} alt={f.name} className="h-16 w-16 rounded object-cover border" />
           <button
             type="button"
-            aria-label={`移除 ${f.name}`}
+            aria-label={t('attach.remove', { name: f.name })}
             onClick={() => setAttachments(attachments.filter((_, j) => j !== i))}
             className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-background border flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
           >

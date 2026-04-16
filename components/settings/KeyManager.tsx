@@ -7,6 +7,7 @@ import { getKeyFields, getConfigFields } from '@/lib/providers/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { useT } from '@/lib/i18n/useT'
 
 bootstrapProviders()
 
@@ -17,6 +18,7 @@ function fieldLabel(field: string): string {
 
 export function KeyManager() {
   const providers = listProviders()
+  const t = useT()
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
   const [configs, setConfigs] = useState<Record<string, Record<string, string>>>({})
 
@@ -84,7 +86,7 @@ export function KeyManager() {
                 setCreds(p.id, values[p.id] ?? {})
                 setConfig(p.id, configs[p.id] ?? {})
               }}>
-                保存 {p.displayName}
+                {t('settings.save', { name: p.displayName })}
               </Button>
               <Button variant="outline" onClick={() => {
                 deleteKey(p.id)
@@ -92,7 +94,7 @@ export function KeyManager() {
                 keyFields.forEach(f => { emptyK[f] = '' })
                 setValues(v => ({ ...v, [p.id]: emptyK }))
               }}>
-                清除
+                {t('settings.clear')}
               </Button>
             </div>
           </div>

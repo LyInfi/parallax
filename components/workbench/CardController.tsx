@@ -7,6 +7,7 @@ import type { SizeSpec } from '@/lib/providers/types'
 import { putAsset, setFavorite, latestAssetsOfCard } from '@/lib/storage/gallery'
 import { fetchImageBlob } from '@/lib/image-fetch'
 import { toast } from 'sonner'
+import { getT } from '@/lib/i18n/useT'
 
 export type CardControllerHandle = {
   run: (args: {
@@ -78,7 +79,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     run: ({ sessionId, prompt, attachments, size, n, seed, parentAssetId }) => {
       const creds = getCreds(providerId)
       if (!creds || Object.keys(creds).length === 0) {
-        toast.error(`${providerName} 未填 API Key，请到设置页填入`)
+        toast.error(getT()('card.noKey', { provider: providerName }))
         return
       }
       // For single-field (just apiKey), send raw string for back-compat with existing adapters
@@ -145,7 +146,7 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
     const id = urlToAsset.current.get(url)
     if (id) {
       await setFavorite(id, true)
-      toast.success('已加入收藏')
+      toast.success(getT()('card.favorited'))
     } else {
       // Fallback: auto-save hasn't finished yet (race), save fresh as favorited
       try {
@@ -166,9 +167,9 @@ export const CardController = forwardRef<CardControllerHandle, Props>(function C
           },
         })
         urlToAsset.current.set(url, newId)
-        toast.success('已加入收藏')
+        toast.success(getT()('card.favorited'))
       } catch {
-        toast.error('保存失败')
+        toast.error(getT()('card.saveFailed'))
       }
     }
   }

@@ -1,18 +1,18 @@
 export type Aspect = '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
 export type Tier = 'standard' | 'hd' | 'ultra'
 
-export const ASPECTS: { id: Aspect; label: string }[] = [
-  { id: '1:1',  label: '1:1 · 方形' },
-  { id: '16:9', label: '16:9 · 横屏' },
-  { id: '9:16', label: '9:16 · 竖屏' },
-  { id: '4:3',  label: '4:3 · 横图' },
-  { id: '3:4',  label: '3:4 · 竖图' },
+export const ASPECTS: { id: Aspect }[] = [
+  { id: '1:1' },
+  { id: '16:9' },
+  { id: '9:16' },
+  { id: '4:3' },
+  { id: '3:4' },
 ]
 
-export const TIERS: { id: Tier; label: string }[] = [
-  { id: 'standard', label: '标准' },
-  { id: 'hd',       label: '高清 (2K)' },
-  { id: 'ultra',    label: '超清 (4K)' },
+export const TIERS: { id: Tier }[] = [
+  { id: 'standard' },
+  { id: 'hd' },
+  { id: 'ultra' },
 ]
 
 // Reference dimensions per (aspect, tier) — used for UI preview and as default fallback

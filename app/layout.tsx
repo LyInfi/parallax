@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Nav } from '@/components/Nav'
 import { QueryProvider } from '@/components/QueryProvider'
 import { Toaster } from '@/components/ui/sonner'
+import { LocaleHtmlLang } from '@/components/LocaleHtmlLang'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <body className="min-h-screen bg-background text-foreground">
         <QueryProvider>
+          <LocaleHtmlLang />
           <Nav />
           {children}
           <Toaster />
