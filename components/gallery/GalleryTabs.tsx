@@ -119,6 +119,7 @@ function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
   const [items, setItems] = useState<Asset[]>([])
   const [urls, setUrls] = useState<Record<string, string>>({})
   const [openId, setOpenId] = useState<string | null>(null)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const t = useT()
 
   const reload = async () => {
@@ -133,6 +134,13 @@ function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
   useEffect(() => { reload() }, [favoritesOnly])
 
   const openAsset = items.find(a => a.id === openId) ?? null
+
+  useEffect(() => {
+    if (!openAsset) { setLightboxUrl(null); return }
+    const u = URL.createObjectURL(openAsset.blob)
+    setLightboxUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [openAsset])
 
   if (items.length === 0) return <p className="text-muted-foreground">{favoritesOnly ? t('gallery.empty.favorites') : t('gallery.empty.assets')}</p>
   return (
@@ -151,7 +159,7 @@ function AssetsView({ favoritesOnly }: { favoritesOnly: boolean }) {
       </div>
       <Lightbox
         asset={openAsset}
-        url={openAsset ? urls[openAsset.id] : null}
+        url={lightboxUrl}
         open={openId !== null}
         onOpenChange={(v) => { if (!v) setOpenId(null) }}
         onToggleFav={async () => {
@@ -176,6 +184,7 @@ function SessionsView() {
   const [sessionAssets, setSessionAssets] = useState<Record<string, Asset[]>>({})
   const [urls, setUrls] = useState<Record<string, string>>({})
   const [openId, setOpenId] = useState<string | null>(null)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const router = useRouter()
   const t = useT()
 
@@ -207,6 +216,13 @@ function SessionsView() {
 
   const allAssets = Object.values(sessionAssets).flat()
   const openAsset = allAssets.find(a => a.id === openId) ?? null
+
+  useEffect(() => {
+    if (!openAsset) { setLightboxUrl(null); return }
+    const u = URL.createObjectURL(openAsset.blob)
+    setLightboxUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [openAsset])
 
   if (sessions.length === 0) return <p className="text-muted-foreground">{t('gallery.empty.sessions')}</p>
   return (
@@ -271,7 +287,7 @@ function SessionsView() {
       </div>
       <Lightbox
         asset={openAsset}
-        url={openAsset ? urls[openAsset.id] : null}
+        url={lightboxUrl}
         open={openId !== null}
         onOpenChange={(v) => { if (!v) setOpenId(null) }}
         onToggleFav={async () => {
