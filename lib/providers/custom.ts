@@ -20,7 +20,7 @@ export const customProvider: ProviderAdapter = {
         id: 'baseUrl',
         label: 'Base URL',
         placeholder: 'https://api.example.com/v1',
-        hint: 'OpenAI 兼容端点的 /v1 根路径，如硅基流动、one-api、本地 vLLM 等',
+        hint: '仅填到 /v1 为止（不要带 /chat/completions 或 /images/generations），如 https://api.siliconflow.cn/v1',
       },
       {
         id: 'model',

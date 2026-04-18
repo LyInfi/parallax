@@ -6,11 +6,13 @@ export async function* generateViaImages(args: ProtocolArgs): AsyncIterable<Gene
   const { baseUrl, model, input, apiKey, signal } = args
   yield { type: 'queued' }
 
+  const sizeStr = sizeSpecToOpenAI(input.size)
   const body: Record<string, unknown> = {
     model,
     prompt: input.prompt,
     n: 1,
-    size: sizeSpecToOpenAI(input.size),
+    size: sizeStr,         // OpenAI DALL-E
+    image_size: sizeStr,   // SiliconFlow / some aggregators
     response_format: 'b64_json',
   }
   const refs = referenceDataUrls(input)
@@ -32,7 +34,12 @@ export async function* generateViaImages(args: ProtocolArgs): AsyncIterable<Gene
     if (errEvent) { yield errEvent; return }
 
     const data = await res.json()
-    const items: unknown[] = Array.isArray(data?.data) ? data.data : []
+    // OpenAI returns `data[]`; SiliconFlow returns `images[]`. Accept either.
+    const items: unknown[] = Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.images)
+        ? data.images
+        : []
     let idx = 0
     for (const item of items) {
       const it = item as Record<string, unknown>

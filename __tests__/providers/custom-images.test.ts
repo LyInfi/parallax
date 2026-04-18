@@ -140,4 +140,25 @@ describe('generateViaImages', () => {
     expect(imageEvents).toHaveLength(1)
     expect(imageEvents[0]).toMatchObject({ type: 'image', url: 'data:image/png;base64,PREFERRED=', index: 0 })
   })
+
+  it('sends both size and image_size in request body', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(makeResponse({ data: [{ b64_json: 'A' }] }))
+    vi.stubGlobal('fetch', mockFetch)
+    await collect(generateViaImages({ ...baseArgs, input: { prompt: 'x', size: '768x768' }, signal: new AbortController().signal }))
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.size).toBe('768x768')
+    expect(body.image_size).toBe('768x768')
+  })
+
+  it('parses SiliconFlow-style images[] root', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse({
+      images: [{ url: 'https://sf.example.com/out.png' }],
+      timings: { inference: 1.2 },
+      seed: 42,
+    })))
+    const events = await collect(generateViaImages({ ...baseArgs, input: { prompt: 'x' }, signal: new AbortController().signal }))
+    expect(events[0]).toEqual({ type: 'queued' })
+    expect(events[1]).toEqual({ type: 'image', url: 'https://sf.example.com/out.png', index: 0 })
+    expect(events[2]).toEqual({ type: 'done' })
+  })
 })
