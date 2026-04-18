@@ -116,4 +116,28 @@ describe('generateViaImages', () => {
     const events = await collect(generateViaImages({ ...baseArgs, input: { prompt: 'x' }, signal: new AbortController().signal }))
     expect(events[1]).toMatchObject({ type: 'error', code: 'ABORTED', retryable: false })
   })
+
+  it('200 with empty-field item → NO_IMAGE', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse({ data: [{}] })))
+    const events = await collect(generateViaImages({ ...baseArgs, input: { prompt: 'x' }, signal: new AbortController().signal }))
+    expect(events[1]).toMatchObject({ type: 'error', code: 'NO_IMAGE', retryable: false })
+  })
+
+  it('trailing slash in baseUrl does not produce double slashes', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(makeResponse({ data: [{ b64_json: 'OK=' }] }))
+    vi.stubGlobal('fetch', mockFetch)
+    await collect(generateViaImages({ ...baseArgs, baseUrl: 'https://api.example.com/v1/', input: { prompt: 'x' }, signal: new AbortController().signal }))
+    expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/v1/images/generations')
+  })
+
+  it('prefers b64_json over url when both are present in the same item', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(makeResponse({
+      data: [{ b64_json: 'PREFERRED=', url: 'https://cdn.example.com/ignored.png' }],
+    }))
+    vi.stubGlobal('fetch', mockFetch)
+    const events = await collect(generateViaImages({ ...baseArgs, input: { prompt: 'x' }, signal: new AbortController().signal }))
+    const imageEvents = events.filter((e) => (e as { type: string }).type === 'image')
+    expect(imageEvents).toHaveLength(1)
+    expect(imageEvents[0]).toMatchObject({ type: 'image', url: 'data:image/png;base64,PREFERRED=', index: 0 })
+  })
 })
