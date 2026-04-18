@@ -29,27 +29,30 @@ export async function* generateViaChat(args: ProtocolArgs): AsyncIterable<Genera
       },
       body: JSON.stringify(body),
     })
-    const errEvent = await errorFromResponse(res as Response)
+    const errEvent = await errorFromResponse(res)
     if (errEvent) { yield errEvent; return }
 
-    const data = await (res as Response).json()
+    const data = await res.json()
     const choices: unknown[] = Array.isArray(data?.choices) ? data.choices : []
     let idx = 0
     for (const choice of choices) {
       const message = (choice as Record<string, unknown>)?.message as Record<string, unknown> | undefined
+      const before = idx
       const images: unknown[] = Array.isArray(message?.images) ? (message.images as unknown[]) : []
       for (const img of images) {
         const iu = (img as Record<string, unknown>)?.image_url as Record<string, unknown> | undefined
         const url = typeof iu?.url === 'string' ? iu.url : undefined
         if (url) yield { type: 'image', url, index: idx++ }
       }
-      const parts: unknown[] = Array.isArray(message?.content) ? (message.content as unknown[]) : []
-      for (const part of parts) {
-        const p = part as Record<string, unknown>
-        if (p.type === 'image_url') {
-          const iu = p.image_url as Record<string, unknown> | undefined
-          const url = typeof iu?.url === 'string' ? iu.url : undefined
-          if (url) yield { type: 'image', url, index: idx++ }
+      if (idx === before) {
+        const parts: unknown[] = Array.isArray(message?.content) ? (message.content as unknown[]) : []
+        for (const part of parts) {
+          const p = part as Record<string, unknown>
+          if (p.type === 'image_url') {
+            const iu = p.image_url as Record<string, unknown> | undefined
+            const url = typeof iu?.url === 'string' ? iu.url : undefined
+            if (url) yield { type: 'image', url, index: idx++ }
+          }
         }
       }
     }

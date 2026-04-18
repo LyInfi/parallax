@@ -125,4 +125,21 @@ describe('generateViaChat', () => {
     await collect(generateViaChat({ ...baseArgs, baseUrl: 'https://api.example.com/v1/', input: { prompt: 'x' }, signal: new AbortController().signal }))
     expect(mockFetch.mock.calls[0][0]).toBe('https://api.example.com/v1/chat/completions')
   })
+
+  it('prefers images[] over content-parts when both are present', async () => {
+    const imagesUrl = 'data:image/png;base64,FROMIMAGES'
+    const contentUrl = 'data:image/png;base64,FROMCONTENT'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse({
+      choices: [{
+        message: {
+          images: [{ image_url: { url: imagesUrl } }],
+          content: [{ type: 'image_url', image_url: { url: contentUrl } }],
+        },
+      }],
+    })))
+    const events = await collect(generateViaChat({ ...baseArgs, input: { prompt: 'x' }, signal: new AbortController().signal }))
+    const imageEvents = events.filter((e) => (e as { type: string }).type === 'image')
+    expect(imageEvents).toHaveLength(1)
+    expect(imageEvents[0]).toMatchObject({ type: 'image', url: imagesUrl, index: 0 })
+  })
 })
