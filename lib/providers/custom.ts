@@ -12,6 +12,8 @@ export const customProvider: ProviderAdapter = {
     textToImage: true,
     imageToImage: true,
     maxImages: 1,
+    // Only the `images` protocol forwards SizeSpec to the endpoint; the `chat`
+    // protocol leaves aspect/resolution to the model.
     sizes: ['1024x1024', '512x512', '1792x1024', '1024x1792'],
     configFields: [
       {
@@ -44,6 +46,7 @@ export const customProvider: ProviderAdapter = {
     const model = input.providerOverrides?.model
     const protocolRaw = input.providerOverrides?.protocol ?? 'chat'
 
+    // `!apiKey` is defense-in-depth — the /api/generate route already rejects with 401.
     if (!baseUrlRaw || !model || !apiKey) {
       yield { type: 'queued' }
       yield { type: 'error', code: 'CONFIG_MISSING', message: '请在设置中填入 Base URL、Model、API Key', retryable: false }
