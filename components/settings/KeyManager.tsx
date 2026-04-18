@@ -69,16 +69,35 @@ export function KeyManager() {
                 {cfgFields.map(field => (
                   <div key={field.id}>
                     <Label htmlFor={`cfg-${p.id}-${field.id}`}>{field.label}</Label>
-                    <Input
-                      id={`cfg-${p.id}-${field.id}`}
-                      type="text"
-                      placeholder={field.placeholder}
-                      value={configs[p.id]?.[field.id] ?? ''}
-                      onChange={(e) => setConfigs(c => ({
-                        ...c,
-                        [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
-                      }))}
-                    />
+                    {field.type === 'select' ? (
+                      <select
+                        id={`cfg-${p.id}-${field.id}`}
+                        className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                        value={configs[p.id]?.[field.id] ?? field.default ?? ''}
+                        onChange={(e) => setConfigs(c => ({
+                          ...c,
+                          [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
+                        }))}
+                      >
+                        {field.options?.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        id={`cfg-${p.id}-${field.id}`}
+                        type="text"
+                        placeholder={field.placeholder}
+                        value={configs[p.id]?.[field.id] ?? ''}
+                        onChange={(e) => setConfigs(c => ({
+                          ...c,
+                          [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
+                        }))}
+                      />
+                    )}
+                    {field.hint && (
+                      <p className="text-xs text-muted-foreground mt-1">{field.hint}</p>
+                    )}
                   </div>
                 ))}
               </div>
