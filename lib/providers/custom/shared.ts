@@ -1,6 +1,6 @@
 // lib/providers/custom/shared.ts
 import type { GenerateInput, GenerateEvent, SizeSpec } from '../types'
-import { dimensionsFor } from '../aspect'
+import { GenerateError } from '../types'
 
 export type Protocol = 'chat' | 'images'
 
@@ -15,7 +15,7 @@ export interface ProtocolArgs {
 export function normalizeBaseUrl(raw: string): string {
   const s = raw.trim().replace(/\/+$/, '')
   if (!/^https?:\/\//i.test(s)) {
-    throw new Error('baseUrl 必须以 http:// 或 https:// 开头')
+    throw new GenerateError('CONFIG_INVALID', 'baseUrl 必须以 http:// 或 https:// 开头', false)
   }
   return s
 }
