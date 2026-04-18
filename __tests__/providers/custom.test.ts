@@ -95,23 +95,27 @@ describe('customProvider', () => {
       choices: [{ message: { images: [{ image_url: { url: 'data:image/png;base64,A' } }] } }],
     }))
     vi.stubGlobal('fetch', mockFetch)
-    await collect(customProvider.generate(
+    const events = await collect(customProvider.generate(
       { prompt: 'x', providerOverrides: { baseUrl: 'https://a.com/v1', model: 'm', protocol: 'chat' } },
       'key',
       new AbortController().signal,
     ))
     expect(mockFetch.mock.calls[0][0]).toBe('https://a.com/v1/chat/completions')
+    const queuedCount = events.filter((e) => (e as { type: string }).type === 'queued').length
+    expect(queuedCount).toBe(1)
   })
 
   it('dispatches images → /images/generations', async () => {
     const mockFetch = vi.fn().mockResolvedValue(makeResponse({ data: [{ b64_json: 'AA' }] }))
     vi.stubGlobal('fetch', mockFetch)
-    await collect(customProvider.generate(
+    const events = await collect(customProvider.generate(
       { prompt: 'x', providerOverrides: { baseUrl: 'https://a.com/v1', model: 'm', protocol: 'images' } },
       'key',
       new AbortController().signal,
     ))
     expect(mockFetch.mock.calls[0][0]).toBe('https://a.com/v1/images/generations')
+    const queuedCount = events.filter((e) => (e as { type: string }).type === 'queued').length
+    expect(queuedCount).toBe(1)
   })
 
   it('defaults to chat when protocol is absent', async () => {
@@ -119,11 +123,13 @@ describe('customProvider', () => {
       choices: [{ message: { images: [{ image_url: { url: 'data:image/png;base64,A' } }] } }],
     }))
     vi.stubGlobal('fetch', mockFetch)
-    await collect(customProvider.generate(
+    const events = await collect(customProvider.generate(
       { prompt: 'x', providerOverrides: { baseUrl: 'https://a.com/v1', model: 'm' } },
       'key',
       new AbortController().signal,
     ))
     expect(mockFetch.mock.calls[0][0]).toBe('https://a.com/v1/chat/completions')
+    const queuedCount = events.filter((e) => (e as { type: string }).type === 'queued').length
+    expect(queuedCount).toBe(1)
   })
 })

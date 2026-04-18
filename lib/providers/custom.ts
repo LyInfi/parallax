@@ -1,5 +1,6 @@
 // lib/providers/custom.ts
 import type { ProviderAdapter, GenerateEvent } from './types'
+import { GenerateError } from './types'
 import { generateViaChat } from './custom/chat'
 import { generateViaImages } from './custom/images'
 import { normalizeBaseUrl, type Protocol } from './custom/shared'
@@ -59,7 +60,11 @@ export const customProvider: ProviderAdapter = {
       baseUrl = normalizeBaseUrl(String(baseUrlRaw))
     } catch (e) {
       yield { type: 'queued' }
-      yield { type: 'error', code: 'CONFIG_INVALID', message: (e as Error).message, retryable: false }
+      if (e instanceof GenerateError) {
+        yield { type: 'error', code: e.code, message: e.message, retryable: e.retryable }
+      } else {
+        yield { type: 'error', code: 'CONFIG_INVALID', message: (e as Error).message, retryable: false }
+      }
       return
     }
 
