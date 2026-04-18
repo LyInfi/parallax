@@ -11,6 +11,8 @@ import { previewSize } from '@/lib/providers/size-preview'
 import type { SizeSpec } from '@/lib/providers/types'
 import { listProviders } from '@/lib/providers/registry'
 import { bootstrapProviders } from '@/lib/providers'
+import { useT } from '@/lib/i18n/useT'
+import type { TKey } from '@/lib/i18n/dict'
 
 bootstrapProviders()
 
@@ -21,6 +23,7 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
   const cards = useModelStore((s) => s.cards)
   const [providers, setProviders] = useState<Array<{ id: string; displayName: string }>>([])
   useEffect(() => { setProviders(listProviders()) }, [])
+  const t = useT()
 
   const disabled = !prompt.trim() || !!busy
 
@@ -44,7 +47,7 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
       <div className="flex gap-2 items-start">
         <AttachmentTrigger />
         <Textarea
-          placeholder="描述你想生成的内容…"
+          placeholder={t('prompt.placeholder')}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
@@ -52,7 +55,7 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
         />
       </div>
       <div className="flex gap-2 items-center flex-wrap">
-        <label className="text-sm text-muted-foreground">宽高比</label>
+        <label className="text-sm text-muted-foreground">{t('prompt.aspect')}</label>
         <select
           aria-label="aspect"
           value={selectedAspect}
@@ -60,21 +63,21 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
           className="border rounded px-2 py-1 text-sm"
         >
           {ASPECTS.map(a => (
-            <option key={a.id} value={a.id}>{a.label}</option>
+            <option key={a.id} value={a.id}>{t(`aspect.${a.id}` as TKey)}</option>
           ))}
         </select>
-        <label className="text-sm text-muted-foreground ml-2">质量</label>
+        <label className="text-sm text-muted-foreground ml-2">{t('prompt.tier')}</label>
         <select
           aria-label="tier"
           value={selectedTier}
           onChange={(e) => setParams({ tier: e.target.value as Tier })}
           className="border rounded px-2 py-1 text-sm"
         >
-          {TIERS.map(t => (
-            <option key={t.id} value={t.id}>{t.label}</option>
+          {TIERS.map(tt => (
+            <option key={tt.id} value={tt.id}>{t(`tier.${tt.id}` as TKey)}</option>
           ))}
         </select>
-        <label className="text-sm text-muted-foreground ml-2">张数</label>
+        <label className="text-sm text-muted-foreground ml-2">{t('prompt.n')}</label>
         <input
           aria-label="n"
           type="number" min={1} max={4}
@@ -83,12 +86,12 @@ export function PromptBar({ onGenerate, busy, onCancel }: Props) {
           className="border rounded px-2 py-1 w-16 text-sm"
         />
         <div className="flex-1" />
-        {busy && onCancel && <Button variant="outline" onClick={onCancel}>取消</Button>}
-        <Button onClick={onGenerate} disabled={disabled}>生成</Button>
+        {busy && onCancel && <Button variant="outline" onClick={onCancel}>{t('prompt.cancel')}</Button>}
+        <Button onClick={onGenerate} disabled={disabled}>{t('prompt.generate')}</Button>
       </div>
       {previews.length > 0 && (
         <div className="text-xs text-muted-foreground">
-          预计输出尺寸：
+          {t('prompt.previewPrefix')}
           {previews.map((f, i) => (
             <span key={i} className="ml-2">
               {f.name} → <code>{f.size}</code>

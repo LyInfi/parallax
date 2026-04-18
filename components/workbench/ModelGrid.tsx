@@ -10,6 +10,8 @@ import { putSession } from '@/lib/storage/gallery'
 import { fetchImageBlob } from '@/lib/image-fetch'
 import { getConfig } from '@/lib/storage/keys'
 import { toast } from 'sonner'
+import { getT } from '@/lib/i18n/useT'
+import { useT } from '@/lib/i18n/useT'
 
 bootstrapProviders()
 
@@ -19,6 +21,7 @@ function effectiveModel(providerId: string, defaultModel?: string): string | und
 }
 
 export function ModelGrid() {
+  const t = useT()
   const { cards, removeCard } = useModelStore()
   usePromptStore() // subscribe for re-renders; live values read via getState()
   const providers = listProviders()
@@ -72,10 +75,10 @@ export function ModelGrid() {
       const blob = await fetchImageBlob(url)
       const f = new File([blob], 'reference.png', { type: blob.type || 'image/png' })
       usePromptStore.getState().setAttachments([f])
-      toast.success('已作为参考图加入，编辑提示词后点击生成')
+      toast.success(getT()('grid.derive.added'))
     } catch (e) {
       console.error('[useAsReference] failed', e)
-      toast.error('加载参考图失败')
+      toast.error(getT()('grid.derive.failed'))
     }
   }
 
@@ -103,7 +106,7 @@ export function ModelGrid() {
         })}
         {cards.length === 0 && (
           <div className="col-span-full text-center text-muted-foreground py-20">
-            点击右上角 "+ 添加模型" 开始
+            {t('grid.empty')}
           </div>
         )}
       </div>

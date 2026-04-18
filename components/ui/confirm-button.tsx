@@ -5,6 +5,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from './alert-dialog'
+import { useT } from '@/lib/i18n/useT'
 
 type Props = Omit<ButtonProps, 'onClick'> & {
   children: ReactNode
@@ -16,23 +17,24 @@ type Props = Omit<ButtonProps, 'onClick'> & {
 }
 
 export function ConfirmButton({
-  children, title = '确认', description = '此操作不可撤销。',
-  confirmLabel = '确定', cancelLabel = '取消', onConfirm, ...btn
+  children, title, description,
+  confirmLabel, cancelLabel, onConfirm, ...btn
 }: Props) {
   const [open, setOpen] = useState(false)
+  const t = useT()
   return (
     <>
       <Button {...btn} onClick={() => setOpen(true)}>{children}</Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{title}</AlertDialogTitle>
-            <AlertDialogDescription>{description}</AlertDialogDescription>
+            <AlertDialogTitle>{title ?? t('confirm.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{description ?? t('confirm.desc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+            <AlertDialogCancel>{cancelLabel ?? t('confirm.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { void onConfirm(); setOpen(false) }}>
-              {confirmLabel}
+              {confirmLabel ?? t('confirm.ok')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

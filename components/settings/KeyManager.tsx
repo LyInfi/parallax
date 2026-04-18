@@ -7,6 +7,7 @@ import { getKeyFields, getConfigFields } from '@/lib/providers/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { useT } from '@/lib/i18n/useT'
 
 bootstrapProviders()
 
@@ -17,6 +18,7 @@ function fieldLabel(field: string): string {
 
 export function KeyManager() {
   const providers = listProviders()
+  const t = useT()
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
   const [configs, setConfigs] = useState<Record<string, Record<string, string>>>({})
 
@@ -64,27 +66,51 @@ export function KeyManager() {
                     />
                   </div>
                 ))}
-                {cfgFields.map(field => (
-                  <div key={field.id}>
-                    <Label htmlFor={`cfg-${p.id}-${field.id}`}>{field.label}</Label>
-                    <Input
-                      id={`cfg-${p.id}-${field.id}`}
-                      type="text"
-                      placeholder={field.placeholder}
-                      value={configs[p.id]?.[field.id] ?? ''}
-                      onChange={(e) => setConfigs(c => ({
-                        ...c,
-                        [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
-                      }))}
-                    />
-                  </div>
-                ))}
+                {cfgFields.map(field => {
+                  const hintId = field.hint ? `hint-${p.id}-${field.id}` : undefined
+                  return (
+                    <div key={field.id}>
+                      <Label htmlFor={`cfg-${p.id}-${field.id}`}>{field.label}</Label>
+                      {field.type === 'select' ? (
+                        <select
+                          id={`cfg-${p.id}-${field.id}`}
+                          aria-describedby={hintId}
+                          className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                          value={configs[p.id]?.[field.id] ?? field.default ?? ''}
+                          onChange={(e) => setConfigs(c => ({
+                            ...c,
+                            [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
+                          }))}
+                        >
+                          {field.options?.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          id={`cfg-${p.id}-${field.id}`}
+                          type="text"
+                          placeholder={field.placeholder}
+                          aria-describedby={hintId}
+                          value={configs[p.id]?.[field.id] ?? ''}
+                          onChange={(e) => setConfigs(c => ({
+                            ...c,
+                            [p.id]: { ...(c[p.id] ?? {}), [field.id]: e.target.value },
+                          }))}
+                        />
+                      )}
+                      {field.hint && (
+                        <p id={hintId} className="text-xs text-muted-foreground mt-1">{field.hint}</p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
               <Button onClick={() => {
                 setCreds(p.id, values[p.id] ?? {})
                 setConfig(p.id, configs[p.id] ?? {})
               }}>
-                保存 {p.displayName}
+                {t('settings.save', { name: p.displayName })}
               </Button>
               <Button variant="outline" onClick={() => {
                 deleteKey(p.id)
@@ -92,7 +118,7 @@ export function KeyManager() {
                 keyFields.forEach(f => { emptyK[f] = '' })
                 setValues(v => ({ ...v, [p.id]: emptyK }))
               }}>
-                清除
+                {t('settings.clear')}
               </Button>
             </div>
           </div>

@@ -2,12 +2,14 @@
 import { useState, type ReactNode, cloneElement, isValidElement } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/lib/i18n/useT'
 
 type Provider = { id: string; displayName: string; capabilities: unknown }
 type Props = { providers: Provider[]; onSelect: (id: string) => void; trigger: ReactNode }
 
 export function ModelPicker({ providers, onSelect, trigger }: Props) {
   const [open, setOpen] = useState(false)
+  const t = useT()
   const triggerEl = isValidElement(trigger)
     ? cloneElement(trigger as React.ReactElement<{ onClick?: () => void }>, { onClick: () => setOpen(true) })
     : trigger
@@ -16,7 +18,7 @@ export function ModelPicker({ providers, onSelect, trigger }: Props) {
       {triggerEl}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogTitle>Select a model</DialogTitle>
+          <DialogTitle>{t('picker.title')}</DialogTitle>
           <div className="grid gap-2">
             {providers.map(p => (
               <Button key={p.id} variant="outline" onClick={() => { onSelect(p.id); setOpen(false) }}>

@@ -9,6 +9,12 @@ export const ConfigFieldSchema = z.object({
   label: z.string(),
   placeholder: z.string().optional(),
   default: z.string().optional(),
+  hint: z.string().optional(),
+  type: z.enum(['text', 'select']).optional(),
+  options: z.array(z.object({
+    value: z.string(),
+    label: z.string(),
+  })).optional(),
 })
 export type ConfigField = z.infer<typeof ConfigFieldSchema>
 
