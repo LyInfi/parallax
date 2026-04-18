@@ -6,6 +6,7 @@ import { doubaoSeedreamProvider } from './doubao-seedream'
 import { jimengSeedreamProvider } from './jimeng-seedream'
 import { wanxiangProvider } from './wanxiang'
 import { hunyuanProvider } from './hunyuan'
+import { customProvider } from './custom'
 
 let bootstrapped = false
 export function bootstrapProviders(): void {
@@ -18,5 +19,6 @@ export function bootstrapProviders(): void {
   registerProvider(jimengSeedreamProvider)
   registerProvider(wanxiangProvider)
   registerProvider(hunyuanProvider)
+  registerProvider(customProvider)
   bootstrapped = true
 }
