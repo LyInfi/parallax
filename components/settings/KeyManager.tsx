@@ -8,6 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useT } from '@/lib/i18n/useT'
+import {
+  EXPERIMENTAL_CONSENT_VERSION,
+  ExperimentalBanner,
+} from '@/components/settings/ExperimentalBanner'
+import { GeminiWebLoginButton } from '@/components/settings/GeminiWebLoginButton'
+import { hasConsent } from '@/lib/storage/consent'
 
 bootstrapProviders()
 
@@ -21,10 +27,12 @@ export function KeyManager() {
   const t = useT()
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
   const [configs, setConfigs] = useState<Record<string, Record<string, string>>>({})
+  const [consents, setConsents] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const initV: Record<string, Record<string, string>> = {}
     const initC: Record<string, Record<string, string>> = {}
+    const initConsent: Record<string, boolean> = {}
     providers.forEach(p => {
       const creds = getCreds(p.id)
       const fields = getKeyFields(p)
@@ -36,9 +44,14 @@ export function KeyManager() {
       const cfgEntry: Record<string, string> = {}
       getConfigFields(p).forEach(f => { cfgEntry[f.id] = cfg[f.id] ?? f.default ?? '' })
       initC[p.id] = cfgEntry
+
+      if (p.isExperimental) {
+        initConsent[p.id] = hasConsent(p.id, EXPERIMENTAL_CONSENT_VERSION)
+      }
     })
     setValues(initV)
     setConfigs(initC)
+    setConsents(initConsent)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -47,11 +60,32 @@ export function KeyManager() {
       {providers.map(p => {
         const keyFields = getKeyFields(p)
         const cfgFields = getConfigFields(p)
+        const experimentalGate = !!p.isExperimental
+        const consented = experimentalGate ? !!consents[p.id] : true
         return (
           <div key={p.id} className="border p-3 rounded space-y-3">
+            {experimentalGate && (
+              <ExperimentalBanner
+                providerId={p.id}
+                disclaimer={p.experimentalDisclaimer}
+                onConsentChange={(accepted) =>
+                  setConsents(prev => ({ ...prev, [p.id]: accepted }))
+                }
+              />
+            )}
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-2">
                 <p className="font-medium text-sm">{p.displayName}</p>
+                {p.id === 'gemini-web' && (
+                  <GeminiWebLoginButton
+                    onSuccess={() => {
+                      const creds = getCreds(p.id)
+                      const next: Record<string, string> = {}
+                      keyFields.forEach(f => { next[f] = creds?.[f] ?? '' })
+                      setValues(v => ({ ...v, [p.id]: next }))
+                    }}
+                  />
+                )}
                 {keyFields.map(field => (
                   <div key={field}>
                     <Label htmlFor={`key-${p.id}-${field}`}>{fieldLabel(field)}</Label>
@@ -106,10 +140,14 @@ export function KeyManager() {
                   )
                 })}
               </div>
-              <Button onClick={() => {
-                setCreds(p.id, values[p.id] ?? {})
-                setConfig(p.id, configs[p.id] ?? {})
-              }}>
+              <Button
+                disabled={!consented}
+                title={!consented ? '请先勾选实验性 provider 的风险确认' : undefined}
+                onClick={() => {
+                  setCreds(p.id, values[p.id] ?? {})
+                  setConfig(p.id, configs[p.id] ?? {})
+                }}
+              >
                 {t('settings.save', { name: p.displayName })}
               </Button>
               <Button variant="outline" onClick={() => {

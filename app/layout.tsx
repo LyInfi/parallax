@@ -4,6 +4,7 @@ import { Nav } from '@/components/Nav'
 import { QueryProvider } from '@/components/QueryProvider'
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleHtmlLang } from '@/components/LocaleHtmlLang'
+import { UpdateNotifier } from '@/components/UpdateNotifier'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LocaleHtmlLang />
           <Nav />
           {children}
+          <UpdateNotifier />
           <Toaster />
         </QueryProvider>
       </body>

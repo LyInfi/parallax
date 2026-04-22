@@ -61,6 +61,7 @@ export const GenerateEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('image'), url: z.string(), index: z.number().int() }),
   z.object({ type: z.literal('error'), code: z.string(), message: z.string(), retryable: z.boolean() }),
   z.object({ type: z.literal('done') }),
+  z.object({ type: z.literal('credential-refresh'), fields: z.record(z.string(), z.string()) }),
 ])
 export type GenerateEvent = z.infer<typeof GenerateEventSchema>
 
@@ -74,6 +75,10 @@ export interface ProviderAdapter {
   /** Default model identifier used when the user does not override via config. Shown in UI. */
   defaultModel?: string
   capabilities: Capabilities
+  /** Marks provider as unofficial / reverse-engineered. UI shows a warning + consent gate. */
+  isExperimental?: boolean
+  /** Optional long-form disclaimer rendered in the experimental banner. */
+  experimentalDisclaimer?: string
   generate(input: GenerateInput, apiKey: string, signal: AbortSignal): AsyncIterable<GenerateEvent>
 }
 

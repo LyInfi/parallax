@@ -1,0 +1,58 @@
+appId: com.parallax.app
+productName: Parallax
+copyright: Copyright (c) 2026 Parallax authors
+
+directories:
+  output: release
+  buildResources: electron/build-resources
+
+# What gets packed into the asar (default true). Sources of truth for the app:
+#   - electron/dist/**         compiled main + preload
+#   - .next/standalone/**      Next.js server bundle (asarUnpack so it's spawnable)
+#   - .next/static/**          static assets (referenced by server)
+#   - public/**                user-visible static
+files:
+  - electron/dist/**/*
+  - package.json
+asar: true
+
+# `npm run build` already copies .next/static and public into .next/standalone/.
+# So we only need to ship the standalone tree itself.
+extraResources:
+  - from: .next/standalone
+    to: app/.next/standalone
+
+mac:
+  category: public.app-category.graphics-design
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  # Set to null to skip code signing locally; CI overrides via CSC_LINK env.
+  identity: null
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+
+linux:
+  category: Graphics
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+
+publish:
+  provider: github
+  releaseType: release

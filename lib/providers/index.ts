@@ -7,6 +7,7 @@ import { jimengSeedreamProvider } from './jimeng-seedream'
 import { wanxiangProvider } from './wanxiang'
 import { hunyuanProvider } from './hunyuan'
 import { customProvider } from './custom'
+import { geminiWebProvider } from './gemini-web'
 
 let bootstrapped = false
 export function bootstrapProviders(): void {
@@ -19,6 +20,7 @@ export function bootstrapProviders(): void {
   registerProvider(jimengSeedreamProvider)
   registerProvider(wanxiangProvider)
   registerProvider(hunyuanProvider)
+  registerProvider(geminiWebProvider)
   registerProvider(customProvider)
   bootstrapped = true
 }

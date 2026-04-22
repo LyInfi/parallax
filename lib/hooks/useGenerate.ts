@@ -2,6 +2,22 @@
 import { useRef, useState } from 'react'
 import { streamSSE } from '@/lib/sse/client'
 import type { SizeSpec } from '@/lib/providers/types'
+import { getCreds, setCreds } from '@/lib/storage/keys'
+
+/**
+ * Notify the user that a generation finished while the window was hidden /
+ * minimized / in the background. No-op when the window is focused (the user
+ * can already see the result), or when the runtime is not a browser.
+ */
+function notifyIfHidden(message: string) {
+  if (typeof document === 'undefined' || typeof Notification === 'undefined') return
+  if (!document.hidden) return
+  const fire = () => new Notification('Parallax', { body: message })
+  if (Notification.permission === 'granted') fire()
+  else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then((p) => { if (p === 'granted') fire() }).catch(() => {})
+  }
+}
 
 type Status = 'idle' | 'queued' | 'running' | 'done' | 'error'
 
@@ -46,13 +62,28 @@ export function useGenerate() {
         if (evt.type === 'queued') setStatus('queued')
         else if (evt.type === 'progress') { setStatus('running'); if (evt.pct != null) setPct(evt.pct) }
         else if (evt.type === 'image') { setStatus('running'); setImages(prev => [...prev, evt.url]) }
-        else if (evt.type === 'error') { setError({ code: evt.code, message: evt.message }); setStatus('error'); return }
-        else if (evt.type === 'done') { setStatus('done'); return }
+        else if (evt.type === 'credential-refresh') {
+          const existing = getCreds(p.providerId) ?? {}
+          setCreds(p.providerId, { ...existing, ...evt.fields })
+        }
+        else if (evt.type === 'error') {
+          setError({ code: evt.code, message: evt.message })
+          setStatus('error')
+          notifyIfHidden(`Generation failed: ${evt.message}`)
+          return
+        }
+        else if (evt.type === 'done') {
+          setStatus('done')
+          notifyIfHidden('Generation complete')
+          return
+        }
       }
       setStatus('done')
+      notifyIfHidden('Generation complete')
     } catch (e) {
       setError({ code: 'NETWORK', message: (e as Error).message })
       setStatus('error')
+      notifyIfHidden(`Network error: ${(e as Error).message}`)
     }
   }
 
